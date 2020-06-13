@@ -1,0 +1,88 @@
+---
+title: "ESS data"
+author: "Pamela Inostroza"
+date: "27/04/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(xlsx)
+library(haven)
+library(psych)
+library(expss)
+library(sjlabelled)
+library(dplyr)
+library(reshape)
+```
+
+## Data
+
+```{r data0, include=FALSE, warning=FALSE, eval=FALSE}
+
+dirdata0 <- "C:/Users/pamel/Documents/ESS/"
+gini_cntry1 <- read.xlsx(paste0(dirdata0,"Country_data.xlsx"), sheetName = "GINI", rowIndex = c(9:54))
+gini_cntry2 <- melt(gini_cntry1, id = "GEO.TIME" )
+gini_cntry2 <- rename(gini_cntry2,c("GEO.TIME"= "cntry","variable" = "Year","value" = "GINI"))
+gini_cntry2$essround <- ifelse(gini_cntry2$Year == "X2010", 5,
+                               ifelse(gini_cntry2$Year == "X2012", 6,
+                                      ifelse(gini_cntry2$Year == "X2014", 7,
+                                             ifelse(gini_cntry2$Year == "X2016", 8,
+                                                    ifelse(gini_cntry2$Year == "X2018", 9, NA)))))
+
+gdp_cntry1 <- read.xlsx(paste0(dirdata0,"Country_data.xlsx"), sheetName = "GDP", rowIndex = c(5:269))
+gdp_cntry2 <- gdp_cntry1[,c("Country.Name",paste0("X20",seq(10,19)))]
+gdp_cntry2 <- melt(gdp_cntry2, id = "Country.Name" )
+gdp_cntry2 <- rename(gdp_cntry2,c("Country.Name"= "cntry","variable" = "Year","value" = "GDP"))
+gdp_cntry2$essround <- ifelse(gdp_cntry2$Year == "X2010", 5,
+                               ifelse(gdp_cntry2$Year == "X2012", 6,
+                                      ifelse(gdp_cntry2$Year == "X2014", 7,
+                                             ifelse(gdp_cntry2$Year == "X2016", 8,
+                                                    ifelse(gdp_cntry2$Year == "X2018", 9, NA)))))
+
+hdi_cntry1 <- read.xlsx(paste0(dirdata0,"Country_data.xlsx"), sheetName = "HDI", rowIndex = c(2:191))
+hdi_cntry2 <- melt(hdi_cntry1, id = "Country" )
+hdi_cntry2 <- rename(hdi_cntry2,c("Country"= "cntry","variable" = "Year","value" = "HDI"))
+hdi_cntry2$essround <- ifelse(hdi_cntry2$Year == "X2010", 5,
+                               ifelse(hdi_cntry2$Year == "X2012", 6,
+                                      ifelse(hdi_cntry2$Year == "X2014", 7,
+                                             ifelse(hdi_cntry2$Year == "X2016", 8,
+                                                    ifelse(hdi_cntry2$Year == "X2018", 9, NA)))))
+
+country_data <- full_join(gini_cntry2,gdp_cntry2, by = c("cntry","essround","Year"))
+country_data <- full_join(country_data,hdi_cntry2, by = c("cntry","essround","Year"))
+country_data <- country_data[!is.na(country_data$essround),]
+
+dirdata1 <- "C:/Users/pamel/Documents/ESS/All rounds/"
+ds_all1 <- haven::read_spss(paste0(dirdata1,"ESS1-8e01.sav"))
+ds_all1 = add_labelled_class(ds_all1)
+
+dirdata <- "C:/Users/pamel/Documents/ESS/2018 (round 9)/"
+ds_91 <- haven::read_spss(paste0(dirdata,"ESS9e01_2.sav"))
+ds_91 = add_labelled_class(ds_91)
+
+ds <- rbind(ds_all1[names(ds_all1)[names(ds_all1) %in% names(ds_91)]],
+            ds_91[names(ds_all1)[names(ds_all1) %in% names(ds_91)]])
+ds$cntry <- as.factor(as.character(ds$cntry))
+
+round <- c(5,6,7,8,9) 
+countries <- unique(ds[,"cntry"])$cntry
+
+country_data <- country_data %>% filter(cntry %in% countries & essround %in% round)
+
+ds <- ds %>% filter(cntry %in% countries & essround %in% round)
+ds <- copy_labels(ds, ds)
+
+ds <- left_join(ds,country_data,by = c("cntry","essround"))
+table(as_character(ds$cntry),ds$essround)
+
+ds$time <- ifelse(ds$essround == 5, 0,
+                  ifelse(ds$essround == 6, 1,
+                         ifelse(ds$essround == 7, 2,
+                                ifelse(ds$essround == 8, 3,
+                                       ifelse(ds$essround == 9, 4, NA)))))
+setwd(dirdata0)
+save(ds,file="ESS5-9Round.RData")
+```
