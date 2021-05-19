@@ -1,0 +1,1278 @@
+Mplus VERSION 7.4
+MUTHEN & MUTHEN
+05/14/2020   3:10 PM
+
+INPUT INSTRUCTIONS
+
+  TITLE:	this is an example of a two-level CFA with
+  	continuous factor indicators, a random intercept
+      factor, and covariates
+  DATA:	FILE IS sem.dat;
+  VARIABLE:	NAMES ARE cntry dweight HDI iphlppl_r iplylfr_r
+              ipeqopt_r ipudrst_r impenv_r agea gndrD eisced2
+              eisced3 domicil2 domicil3 domicil4;
+      WITHIN = agea gndrD eisced2
+              eisced3 domicil2 domicil3 domicil4;
+  	BETWEEN = HDI;
+  	CLUSTER = cntry;
+      WEIGHT = dweight;
+      MISSING = .;
+  ANALYSIS:	TYPE = TWOLEVEL;
+  MODEL:
+  	%WITHIN%
+  	Benev_w BY iphlppl_r iplylfr_r ;	
+      Unive_w BY ipeqopt_r ipudrst_r impenv_r;
+      STrasc_w BY Benev_w Unive_w;
+  	STrasc_w ON agea gndrD eisced2 eisced3 domicil2 domicil3 domicil4;
+  	%BETWEEN%
+  	Benev_b BY iphlppl_r iplylfr_r ;	
+      Unive_b BY ipeqopt_r ipudrst_r impenv_r;
+      STrasc_b BY Benev_b Unive_b;
+  	STrasc_b ON HDI;	
+
+
+
+*** WARNING in VARIABLE command
+  Note that only the first 8 characters of variable names are used in the output.
+  Shorten variable names to avoid any confusion.
+*** WARNING
+  Data set contains cases with missing on x-variables.
+  These cases were not included in the analysis.
+  Number of cases with missing on x-variables:  322
+*** WARNING
+  Data set contains cases with missing on all variables except
+  x-variables.  These cases were not included in the analysis.
+  Number of cases with missing on all variables except x-variables:  178
+   3 WARNING(S) FOUND IN THE INPUT INSTRUCTIONS
+
+
+
+this is an example of a two-level CFA with
+continuous factor indicators, a random intercept
+factor, and covariates
+
+SUMMARY OF ANALYSIS
+
+Number of groups                                                 1
+Number of observations                                       27040
+
+Number of dependent variables                                    5
+Number of independent variables                                  8
+Number of continuous latent variables                            6
+
+Observed dependent variables
+
+  Continuous
+   IPHLPPL_R   IPLYLFR_R   IPEQOPT_R   IPUDRST_R   IMPENV_R
+
+Observed independent variables
+   HDI         AGEA        GNDRD       EISCED2     EISCED3     DOMICIL2
+   DOMICIL3    DOMICIL4
+
+Continuous latent variables
+   BENEV_W     UNIVE_W     STRASC_W    BENEV_B     UNIVE_B     STRASC_B
+
+Variables with special functions
+
+  Cluster variable      CNTRY
+  Weight variable (cluster-size scaling)
+    DWEIGHT
+
+  Within variables
+   AGEA        GNDRD       EISCED2     EISCED3     DOMICIL2    DOMICIL3
+   DOMICIL4
+
+  Between variables
+   HDI
+
+
+Estimator                                                      MLR
+Information matrix                                        OBSERVED
+Maximum number of iterations                                   100
+Convergence criterion                                    0.100D-05
+Maximum number of EM iterations                                500
+Convergence criteria for the EM algorithm
+  Loglikelihood change                                   0.100D-02
+  Relative loglikelihood change                          0.100D-05
+  Derivative                                             0.100D-03
+Minimum variance                                         0.100D-03
+Maximum number of steepest descent iterations                   20
+Maximum number of iterations for H1                           2000
+Convergence criterion for H1                             0.100D-03
+Optimization algorithm                                         EMA
+
+Input data file(s)
+  sem.dat
+Input data format  FREE
+
+
+SUMMARY OF DATA
+
+     Number of missing data patterns            30
+     Number of clusters                         14
+
+     Average cluster size     1931.429
+
+     Estimated Intraclass Correlations for the Y Variables
+
+                Intraclass              Intraclass              Intraclass
+     Variable  Correlation   Variable  Correlation   Variable  Correlation
+
+     IPHLPPL_     0.075      IPLYLFR_     0.054      IPEQOPT_     0.052
+     IPUDRST_     0.045      IMPENV_R     0.027
+
+
+
+COVARIANCE COVERAGE OF DATA
+
+Minimum covariance coverage value   0.100
+
+
+     PROPORTION OF DATA PRESENT
+
+
+           Covariance Coverage
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ IPHLPPL_       0.995
+ IPLYLFR_       0.992         0.996
+ IPEQOPT_       0.989         0.990         0.993
+ IPUDRST_       0.989         0.989         0.987         0.992
+ IMPENV_R       0.992         0.993         0.989         0.989         0.996
+ AGEA           0.995         0.996         0.993         0.992         0.996
+ GNDRD          0.995         0.996         0.993         0.992         0.996
+ EISCED2        0.995         0.996         0.993         0.992         0.996
+ EISCED3        0.995         0.996         0.993         0.992         0.996
+ DOMICIL2       0.995         0.996         0.993         0.992         0.996
+ DOMICIL3       0.995         0.996         0.993         0.992         0.996
+ DOMICIL4       0.995         0.996         0.993         0.992         0.996
+ HDI            0.995         0.996         0.993         0.992         0.996
+
+
+           Covariance Coverage
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ AGEA           1.000
+ GNDRD          1.000         1.000
+ EISCED2        1.000         1.000         1.000
+ EISCED3        1.000         1.000         1.000         1.000
+ DOMICIL2       1.000         1.000         1.000         1.000         1.000
+ DOMICIL3       1.000         1.000         1.000         1.000         1.000
+ DOMICIL4       1.000         1.000         1.000         1.000         1.000
+ HDI            1.000         1.000         1.000         1.000         1.000
+
+
+           Covariance Coverage
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ DOMICIL3       1.000
+ DOMICIL4       1.000         1.000
+ HDI            1.000         1.000         1.000
+
+
+     THE STANDARD ERRORS OF THE MODEL PARAMETER ESTIMATES MAY NOT BE
+     TRUSTWORTHY FOR SOME PARAMETERS DUE TO A NON-POSITIVE DEFINITE
+     FIRST-ORDER DERIVATIVE PRODUCT MATRIX.  THIS MAY BE DUE TO THE STARTING
+     VALUES BUT MAY ALSO BE AN INDICATION OF MODEL NONIDENTIFICATION.  THE
+     CONDITION NUMBER IS      -0.155D-16.  PROBLEM INVOLVING THE FOLLOWING PARAMETER:
+     Parameter 16, %WITHIN%: STRASC_W ON DOMICIL4
+
+     THE NONIDENTIFICATION IS MOST LIKELY DUE TO HAVING MORE PARAMETERS THAN THE
+     NUMBER OF CLUSTERS. REDUCE THE NUMBER OF PARAMETERS.
+
+
+THE MODEL ESTIMATION TERMINATED NORMALLY
+
+     WARNING:  THE LATENT VARIABLE COVARIANCE MATRIX (PSI) IS NOT POSITIVE
+     DEFINITE.  THIS COULD INDICATE A NEGATIVE VARIANCE/RESIDUAL VARIANCE FOR A
+     LATENT VARIABLE, A CORRELATION GREATER OR EQUAL TO ONE BETWEEN TWO LATENT
+     VARIABLES, OR A LINEAR DEPENDENCY AMONG MORE THAN TWO LATENT VARIABLES.
+     CHECK THE TECH4 OUTPUT FOR MORE INFORMATION.
+
+
+
+MODEL FIT INFORMATION
+
+Number of Free Parameters                       37
+
+Loglikelihood
+
+          H0 Value                     -173574.083
+          H0 Scaling Correction Factor      8.5149
+            for MLR
+          H1 Value                     -172827.451
+          H1 Scaling Correction Factor      5.2179
+            for MLR
+
+Information Criteria
+
+          Akaike (AIC)                  347222.167
+          Bayesian (BIC)                347525.754
+          Sample-Size Adjusted BIC      347408.169
+            (n* = (n + 2) / 24)
+
+Chi-Square Test of Model Fit
+
+          Value                            743.774*
+          Degrees of Freedom                    38
+          P-Value                           0.0000
+          Scaling Correction Factor         2.0077
+            for MLR
+
+*   The chi-square value for MLM, MLMV, MLR, ULSMV, WLSM and WLSMV cannot be used
+    for chi-square difference testing in the regular way.  MLM, MLR and WLSM
+    chi-square difference testing is described on the Mplus website.  MLMV, WLSMV,
+    and ULSMV difference testing is done using the DIFFTEST option.
+
+RMSEA (Root Mean Square Error Of Approximation)
+
+          Estimate                           0.026
+
+CFI/TLI
+
+          CFI                                0.901
+          TLI                                0.843
+
+Chi-Square Test of Model Fit for the Baseline Model
+
+          Value                           7154.814
+          Degrees of Freedom                    60
+          P-Value                           0.0000
+
+SRMR (Standardized Root Mean Square Residual)
+
+          Value for Within                   0.020
+          Value for Between                  0.095
+
+
+
+MODEL RESULTS
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+Within Level
+
+ BENEV_W  BY
+    IPHLPPL_R          1.000      0.000    999.000    999.000
+    IPLYLFR_R          0.876      0.036     24.198      0.000
+
+ UNIVE_W  BY
+    IPEQOPT_R          1.000      0.000    999.000    999.000
+    IPUDRST_R          1.131      0.026     43.630      0.000
+    IMPENV_R           1.076      0.071     15.164      0.000
+
+ STRASC_W BY
+    BENEV_W            1.000      0.000    999.000    999.000
+    UNIVE_W            1.044      0.107      9.802      0.000
+
+ STRASC_W   ON
+    AGEA               0.000      0.001     -0.567      0.570
+    GNDRD              0.136      0.023      5.885      0.000
+    EISCED2            0.089      0.014      6.532      0.000
+    EISCED3            0.154      0.018      8.471      0.000
+    DOMICIL2           0.025      0.014      1.721      0.085
+    DOMICIL3           0.061      0.020      3.094      0.002
+    DOMICIL4           0.039      0.022      1.751      0.080
+
+ Residual Variances
+    IPHLPPL_R          0.465      0.031     15.027      0.000
+    IPLYLFR_R          0.424      0.024     17.353      0.000
+    IPEQOPT_R          0.782      0.044     17.598      0.000
+    IPUDRST_R          0.670      0.033     20.114      0.000
+    IMPENV_R           0.666      0.047     14.065      0.000
+    BENEV_W            0.110      0.027      4.003      0.000
+    UNIVE_W           -0.046      0.039     -1.184      0.237
+    STRASC_W           0.269      0.029      9.329      0.000
+
+Between Level
+
+ BENEV_B  BY
+    IPHLPPL_R          1.000      0.000    999.000    999.000
+    IPLYLFR_R          0.655      0.129      5.080      0.000
+
+ UNIVE_B  BY
+    IPEQOPT_R          1.000      0.000    999.000    999.000
+    IPUDRST_R          1.017      0.313      3.254      0.001
+    IMPENV_R           0.488      0.216      2.252      0.024
+
+ STRASC_B BY
+    BENEV_B            1.000      0.000    999.000    999.000
+    UNIVE_B            0.613      0.125      4.895      0.000
+
+ STRASC_B   ON
+    HDI                7.493      1.609      4.656      0.000
+
+ Intercepts
+    IPHLPPL_R         -2.122      1.503     -1.412      0.158
+    IPLYLFR_R          0.495      1.245      0.398      0.691
+    IPEQOPT_R          0.496      1.561      0.318      0.751
+    IPUDRST_R          0.248      1.723      0.144      0.886
+    IMPENV_R           2.788      0.725      3.844      0.000
+
+ Residual Variances
+    IPHLPPL_R          0.012      0.004      3.054      0.002
+    IPLYLFR_R          0.017      0.005      3.331      0.001
+    IPEQOPT_R          0.021      0.010      2.030      0.042
+    IPUDRST_R          0.009      0.005      1.699      0.089
+    IMPENV_R           0.018      0.005      3.854      0.000
+    BENEV_B           -0.025      0.012     -2.069      0.039
+    UNIVE_B            0.006      0.006      1.004      0.316
+    STRASC_B           0.044      0.022      2.013      0.044
+
+
+QUALITY OF NUMERICAL RESULTS
+
+     Condition Number for the Information Matrix             -0.155E-16
+       (ratio of smallest to largest eigenvalue)
+
+
+TECHNICAL 1 OUTPUT
+
+
+     PARAMETER SPECIFICATION FOR WITHIN
+
+
+           NU
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ 1                  0             0             0             0             0
+
+
+           NU
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ 1                  0             0             0             0             0
+
+
+           NU
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ 1                  0             0             0
+
+
+           LAMBDA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ IPHLPPL_           0             0             0             0             0
+ IPLYLFR_           1             0             0             0             0
+ IPEQOPT_           0             0             0             0             0
+ IPUDRST_           0             2             0             0             0
+ IMPENV_R           0             3             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           LAMBDA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ IPHLPPL_           0             0             0             0             0
+ IPLYLFR_           0             0             0             0             0
+ IPEQOPT_           0             0             0             0             0
+ IPUDRST_           0             0             0             0             0
+ IMPENV_R           0             0             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           LAMBDA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ IPHLPPL_           0             0             0             0
+ IPLYLFR_           0             0             0             0
+ IPEQOPT_           0             0             0             0
+ IPUDRST_           0             0             0             0
+ IMPENV_R           0             0             0             0
+ AGEA               0             0             0             0
+ GNDRD              0             0             0             0
+ EISCED2            0             0             0             0
+ EISCED3            0             0             0             0
+ DOMICIL2           0             0             0             0
+ DOMICIL3           0             0             0             0
+ DOMICIL4           0             0             0             0
+ HDI                0             0             0             0
+
+
+           THETA
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ IPHLPPL_           4
+ IPLYLFR_           0             5
+ IPEQOPT_           0             0             6
+ IPUDRST_           0             0             0             7
+ IMPENV_R           0             0             0             0             8
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           THETA
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ AGEA               0
+ GNDRD              0             0
+ EISCED2            0             0             0
+ EISCED3            0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           THETA
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ DOMICIL3           0
+ DOMICIL4           0             0
+ HDI                0             0             0
+
+
+           ALPHA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ 1                  0             0             0             0             0
+
+
+           ALPHA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ 1                  0             0             0             0             0
+
+
+           ALPHA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ 1                  0             0             0             0
+
+
+           BETA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ BENEV_W            0             0             0             0             0
+ UNIVE_W            0             0             9             0             0
+ STRASC_W           0             0             0             0             0
+ BENEV_B            0             0             0             0             0
+ UNIVE_B            0             0             0             0             0
+ STRASC_B           0             0             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           BETA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ BENEV_W            0             0             0             0             0
+ UNIVE_W            0             0             0             0             0
+ STRASC_W           0            10            11            12            13
+ BENEV_B            0             0             0             0             0
+ UNIVE_B            0             0             0             0             0
+ STRASC_B           0             0             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           BETA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ BENEV_W            0             0             0             0
+ UNIVE_W            0             0             0             0
+ STRASC_W          14            15            16             0
+ BENEV_B            0             0             0             0
+ UNIVE_B            0             0             0             0
+ STRASC_B           0             0             0             0
+ AGEA               0             0             0             0
+ GNDRD              0             0             0             0
+ EISCED2            0             0             0             0
+ EISCED3            0             0             0             0
+ DOMICIL2           0             0             0             0
+ DOMICIL3           0             0             0             0
+ DOMICIL4           0             0             0             0
+ HDI                0             0             0             0
+
+
+           PSI
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ BENEV_W           17
+ UNIVE_W            0            18
+ STRASC_W           0             0            19
+ BENEV_B            0             0             0             0
+ UNIVE_B            0             0             0             0             0
+ STRASC_B           0             0             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           PSI
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ STRASC_B           0
+ AGEA               0             0
+ GNDRD              0             0             0
+ EISCED2            0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           PSI
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ DOMICIL2           0
+ DOMICIL3           0             0
+ DOMICIL4           0             0             0
+ HDI                0             0             0             0
+
+
+     PARAMETER SPECIFICATION FOR BETWEEN
+
+
+           NU
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ 1                 20            21            22            23            24
+
+
+           NU
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ 1                  0             0             0             0             0
+
+
+           NU
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ 1                  0             0             0
+
+
+           LAMBDA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ IPHLPPL_           0             0             0             0             0
+ IPLYLFR_           0             0             0            25             0
+ IPEQOPT_           0             0             0             0             0
+ IPUDRST_           0             0             0             0            26
+ IMPENV_R           0             0             0             0            27
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           LAMBDA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ IPHLPPL_           0             0             0             0             0
+ IPLYLFR_           0             0             0             0             0
+ IPEQOPT_           0             0             0             0             0
+ IPUDRST_           0             0             0             0             0
+ IMPENV_R           0             0             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           LAMBDA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ IPHLPPL_           0             0             0             0
+ IPLYLFR_           0             0             0             0
+ IPEQOPT_           0             0             0             0
+ IPUDRST_           0             0             0             0
+ IMPENV_R           0             0             0             0
+ AGEA               0             0             0             0
+ GNDRD              0             0             0             0
+ EISCED2            0             0             0             0
+ EISCED3            0             0             0             0
+ DOMICIL2           0             0             0             0
+ DOMICIL3           0             0             0             0
+ DOMICIL4           0             0             0             0
+ HDI                0             0             0             0
+
+
+           THETA
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ IPHLPPL_          28
+ IPLYLFR_           0            29
+ IPEQOPT_           0             0            30
+ IPUDRST_           0             0             0            31
+ IMPENV_R           0             0             0             0            32
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           THETA
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ AGEA               0
+ GNDRD              0             0
+ EISCED2            0             0             0
+ EISCED3            0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           THETA
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ DOMICIL3           0
+ DOMICIL4           0             0
+ HDI                0             0             0
+
+
+           ALPHA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ 1                  0             0             0             0             0
+
+
+           ALPHA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ 1                  0             0             0             0             0
+
+
+           ALPHA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ 1                  0             0             0             0
+
+
+           BETA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ BENEV_W            0             0             0             0             0
+ UNIVE_W            0             0             0             0             0
+ STRASC_W           0             0             0             0             0
+ BENEV_B            0             0             0             0             0
+ UNIVE_B            0             0             0             0             0
+ STRASC_B           0             0             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           BETA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ BENEV_W            0             0             0             0             0
+ UNIVE_W            0             0             0             0             0
+ STRASC_W           0             0             0             0             0
+ BENEV_B            0             0             0             0             0
+ UNIVE_B           33             0             0             0             0
+ STRASC_B           0             0             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           BETA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ BENEV_W            0             0             0             0
+ UNIVE_W            0             0             0             0
+ STRASC_W           0             0             0             0
+ BENEV_B            0             0             0             0
+ UNIVE_B            0             0             0             0
+ STRASC_B           0             0             0            34
+ AGEA               0             0             0             0
+ GNDRD              0             0             0             0
+ EISCED2            0             0             0             0
+ EISCED3            0             0             0             0
+ DOMICIL2           0             0             0             0
+ DOMICIL3           0             0             0             0
+ DOMICIL4           0             0             0             0
+ HDI                0             0             0             0
+
+
+           PSI
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ BENEV_W            0
+ UNIVE_W            0             0
+ STRASC_W           0             0             0
+ BENEV_B            0             0             0            35
+ UNIVE_B            0             0             0             0            36
+ STRASC_B           0             0             0             0             0
+ AGEA               0             0             0             0             0
+ GNDRD              0             0             0             0             0
+ EISCED2            0             0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           PSI
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ STRASC_B          37
+ AGEA               0             0
+ GNDRD              0             0             0
+ EISCED2            0             0             0             0
+ EISCED3            0             0             0             0             0
+ DOMICIL2           0             0             0             0             0
+ DOMICIL3           0             0             0             0             0
+ DOMICIL4           0             0             0             0             0
+ HDI                0             0             0             0             0
+
+
+           PSI
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ DOMICIL2           0
+ DOMICIL3           0             0
+ DOMICIL4           0             0             0
+ HDI                0             0             0             0
+
+
+     STARTING VALUES FOR WITHIN
+
+
+           NU
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000         0.000
+
+
+           NU
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000         0.000
+
+
+           NU
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ 1              0.000         0.000         0.000
+
+
+           LAMBDA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ IPHLPPL_       1.000         0.000         0.000         0.000         0.000
+ IPLYLFR_       1.000         0.000         0.000         0.000         0.000
+ IPEQOPT_       0.000         1.000         0.000         0.000         0.000
+ IPUDRST_       0.000         1.000         0.000         0.000         0.000
+ IMPENV_R       0.000         1.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           LAMBDA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ IPHLPPL_       0.000         0.000         0.000         0.000         0.000
+ IPLYLFR_       0.000         0.000         0.000         0.000         0.000
+ IPEQOPT_       0.000         0.000         0.000         0.000         0.000
+ IPUDRST_       0.000         0.000         0.000         0.000         0.000
+ IMPENV_R       0.000         0.000         0.000         0.000         0.000
+ AGEA           0.000         1.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         1.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         1.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         1.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           LAMBDA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ IPHLPPL_       0.000         0.000         0.000         0.000
+ IPLYLFR_       0.000         0.000         0.000         0.000
+ IPEQOPT_       0.000         0.000         0.000         0.000
+ IPUDRST_       0.000         0.000         0.000         0.000
+ IMPENV_R       0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000
+ DOMICIL2       1.000         0.000         0.000         0.000
+ DOMICIL3       0.000         1.000         0.000         0.000
+ DOMICIL4       0.000         0.000         1.000         0.000
+ HDI            0.000         0.000         0.000         1.000
+
+
+           THETA
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ IPHLPPL_       0.460
+ IPLYLFR_       0.000         0.382
+ IPEQOPT_       0.000         0.000         0.547
+ IPUDRST_       0.000         0.000         0.000         0.524
+ IMPENV_R       0.000         0.000         0.000         0.000         0.493
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           THETA
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ AGEA           0.000
+ GNDRD          0.000         0.000
+ EISCED2        0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           THETA
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ DOMICIL3       0.000
+ DOMICIL4       0.000         0.000
+ HDI            0.000         0.000         0.000
+
+
+           ALPHA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000         0.000
+
+
+           ALPHA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000         0.000
+
+
+           ALPHA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000
+
+
+           BETA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ BENEV_W        0.000         0.000         1.000         0.000         0.000
+ UNIVE_W        0.000         0.000         1.000         0.000         0.000
+ STRASC_W       0.000         0.000         0.000         0.000         0.000
+ BENEV_B        0.000         0.000         0.000         0.000         0.000
+ UNIVE_B        0.000         0.000         0.000         0.000         0.000
+ STRASC_B       0.000         0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           BETA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ BENEV_W        0.000         0.000         0.000         0.000         0.000
+ UNIVE_W        0.000         0.000         0.000         0.000         0.000
+ STRASC_W       0.000         0.000         0.000         0.000         0.000
+ BENEV_B        0.000         0.000         0.000         0.000         0.000
+ UNIVE_B        0.000         0.000         0.000         0.000         0.000
+ STRASC_B       0.000         0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           BETA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ BENEV_W        0.000         0.000         0.000         0.000
+ UNIVE_W        0.000         0.000         0.000         0.000
+ STRASC_W       0.000         0.000         0.000         0.000
+ BENEV_B        0.000         0.000         0.000         0.000
+ UNIVE_B        0.000         0.000         0.000         0.000
+ STRASC_B       0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000
+
+
+           PSI
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ BENEV_W        0.050
+ UNIVE_W        0.000         0.050
+ STRASC_W       0.000         0.000         0.050
+ BENEV_B        0.000         0.000         0.000         0.000
+ UNIVE_B        0.000         0.000         0.000         0.000         0.000
+ STRASC_B       0.000         0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           PSI
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ STRASC_B       0.000
+ AGEA           0.000       172.721
+ GNDRD          0.000         0.000         0.125
+ EISCED2        0.000         0.000         0.000         0.109
+ EISCED3        0.000         0.000         0.000         0.000         0.092
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           PSI
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ DOMICIL2       0.107
+ DOMICIL3       0.000         0.051
+ DOMICIL4       0.000         0.000         0.072
+ HDI            0.000         0.000         0.000         0.000
+
+
+     STARTING VALUES FOR BETWEEN
+
+
+           NU
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ 1              4.855         5.100         4.828         4.669         4.992
+
+
+           NU
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000         0.000
+
+
+           NU
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ 1              0.000         0.000         0.000
+
+
+           LAMBDA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ IPHLPPL_       0.000         0.000         0.000         1.000         0.000
+ IPLYLFR_       0.000         0.000         0.000         1.000         0.000
+ IPEQOPT_       0.000         0.000         0.000         0.000         1.000
+ IPUDRST_       0.000         0.000         0.000         0.000         1.000
+ IMPENV_R       0.000         0.000         0.000         0.000         1.000
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           LAMBDA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ IPHLPPL_       0.000         0.000         0.000         0.000         0.000
+ IPLYLFR_       0.000         0.000         0.000         0.000         0.000
+ IPEQOPT_       0.000         0.000         0.000         0.000         0.000
+ IPUDRST_       0.000         0.000         0.000         0.000         0.000
+ IMPENV_R       0.000         0.000         0.000         0.000         0.000
+ AGEA           0.000         1.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         1.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         1.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         1.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           LAMBDA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ IPHLPPL_       0.000         0.000         0.000         0.000
+ IPLYLFR_       0.000         0.000         0.000         0.000
+ IPEQOPT_       0.000         0.000         0.000         0.000
+ IPUDRST_       0.000         0.000         0.000         0.000
+ IMPENV_R       0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000
+ DOMICIL2       1.000         0.000         0.000         0.000
+ DOMICIL3       0.000         1.000         0.000         0.000
+ DOMICIL4       0.000         0.000         1.000         0.000
+ HDI            0.000         0.000         0.000         1.000
+
+
+           THETA
+              IPHLPPL_      IPLYLFR_      IPEQOPT_      IPUDRST_      IMPENV_R
+              ________      ________      ________      ________      ________
+ IPHLPPL_       0.460
+ IPLYLFR_       0.000         0.382
+ IPEQOPT_       0.000         0.000         0.547
+ IPUDRST_       0.000         0.000         0.000         0.524
+ IMPENV_R       0.000         0.000         0.000         0.000         0.493
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           THETA
+              AGEA          GNDRD         EISCED2       EISCED3       DOMICIL2
+              ________      ________      ________      ________      ________
+ AGEA           0.000
+ GNDRD          0.000         0.000
+ EISCED2        0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           THETA
+              DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________
+ DOMICIL3       0.000
+ DOMICIL4       0.000         0.000
+ HDI            0.000         0.000         0.000
+
+
+           ALPHA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000         0.000
+
+
+           ALPHA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000         0.000
+
+
+           ALPHA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ 1              0.000         0.000         0.000         0.000
+
+
+           BETA
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ BENEV_W        0.000         0.000         0.000         0.000         0.000
+ UNIVE_W        0.000         0.000         0.000         0.000         0.000
+ STRASC_W       0.000         0.000         0.000         0.000         0.000
+ BENEV_B        0.000         0.000         0.000         0.000         0.000
+ UNIVE_B        0.000         0.000         0.000         0.000         0.000
+ STRASC_B       0.000         0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           BETA
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ BENEV_W        0.000         0.000         0.000         0.000         0.000
+ UNIVE_W        0.000         0.000         0.000         0.000         0.000
+ STRASC_W       0.000         0.000         0.000         0.000         0.000
+ BENEV_B        1.000         0.000         0.000         0.000         0.000
+ UNIVE_B        1.000         0.000         0.000         0.000         0.000
+ STRASC_B       0.000         0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           BETA
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ BENEV_W        0.000         0.000         0.000         0.000
+ UNIVE_W        0.000         0.000         0.000         0.000
+ STRASC_W       0.000         0.000         0.000         0.000
+ BENEV_B        0.000         0.000         0.000         0.000
+ UNIVE_B        0.000         0.000         0.000         0.000
+ STRASC_B       0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000
+
+
+           PSI
+              BENEV_W       UNIVE_W       STRASC_W      BENEV_B       UNIVE_B
+              ________      ________      ________      ________      ________
+ BENEV_W        0.000
+ UNIVE_W        0.000         0.000
+ STRASC_W       0.000         0.000         0.000
+ BENEV_B        0.000         0.000         0.000         0.050
+ UNIVE_B        0.000         0.000         0.000         0.000         0.050
+ STRASC_B       0.000         0.000         0.000         0.000         0.000
+ AGEA           0.000         0.000         0.000         0.000         0.000
+ GNDRD          0.000         0.000         0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           PSI
+              STRASC_B      AGEA          GNDRD         EISCED2       EISCED3
+              ________      ________      ________      ________      ________
+ STRASC_B       0.050
+ AGEA           0.000         0.000
+ GNDRD          0.000         0.000         0.000
+ EISCED2        0.000         0.000         0.000         0.000
+ EISCED3        0.000         0.000         0.000         0.000         0.000
+ DOMICIL2       0.000         0.000         0.000         0.000         0.000
+ DOMICIL3       0.000         0.000         0.000         0.000         0.000
+ DOMICIL4       0.000         0.000         0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000         0.000
+
+
+           PSI
+              DOMICIL2      DOMICIL3      DOMICIL4      HDI
+              ________      ________      ________      ________
+ DOMICIL2       0.000
+ DOMICIL3       0.000         0.000
+ DOMICIL4       0.000         0.000         0.000
+ HDI            0.000         0.000         0.000         0.000
+
+
+DIAGRAM INFORMATION
+
+  Mplus diagrams are currently not available for multilevel analysis.
+  No diagram output was produced.
+
+
+     Beginning Time:  15:10:32
+        Ending Time:  15:10:37
+       Elapsed Time:  00:00:05
+
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2015 Muthen & Muthen
