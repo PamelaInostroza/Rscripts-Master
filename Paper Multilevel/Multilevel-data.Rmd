@@ -1,0 +1,598 @@
+---
+title: "Multilevel Analysis"
+author: "Pamela Inostroza"
+date: "27/04/2020"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+library(xlsx)
+library(haven)
+library(psych)
+library(expss)
+library(sjlabelled)
+library(dplyr)
+library(reshape)
+library(lavaan)
+library(lme4)
+library(lmerTest)
+
+```
+
+## Data
+
+```{r data0, include=FALSE, warning=FALSE, eval=FALSE}
+
+dirdata0 <- "C:/Users/pamel/Documents/ESS/"
+gini_cntry1 <- read.xlsx(paste0(dirdata0,"Country_data.xlsx"), sheetName = "GINI", rowIndex = c(9:54))
+gini_cntry2 <- melt(gini_cntry1, id = "GEO.TIME" )
+gini_cntry2 <- rename(gini_cntry2,c("GEO.TIME"= "cntry","variable" = "Year","value" = "GINI"))
+gini_cntry2$essround <- ifelse(gini_cntry2$Year == "X2010", 5,
+                               ifelse(gini_cntry2$Year == "X2012", 6,
+                                      ifelse(gini_cntry2$Year == "X2014", 7,
+                                             ifelse(gini_cntry2$Year == "X2016", 8,
+                                                    ifelse(gini_cntry2$Year == "X2018", 9, NA)))))
+
+gdp_cntry1 <- read.xlsx(paste0(dirdata0,"Country_data.xlsx"), sheetName = "GDP", rowIndex = c(5:269))
+gdp_cntry2 <- gdp_cntry1[,c("Country.Name",paste0("X20",seq(10,19)))]
+gdp_cntry2 <- melt(gdp_cntry2, id = "Country.Name" )
+gdp_cntry2 <- rename(gdp_cntry2,c("Country.Name"= "cntry","variable" = "Year","value" = "GDP"))
+gdp_cntry2$essround <- ifelse(gdp_cntry2$Year == "X2010", 5,
+                               ifelse(gdp_cntry2$Year == "X2012", 6,
+                                      ifelse(gdp_cntry2$Year == "X2014", 7,
+                                             ifelse(gdp_cntry2$Year == "X2016", 8,
+                                                    ifelse(gdp_cntry2$Year == "X2018", 9, NA)))))
+
+hdi_cntry1 <- read.xlsx(paste0(dirdata0,"Country_data.xlsx"), sheetName = "HDI", rowIndex = c(2:191))
+hdi_cntry2 <- melt(hdi_cntry1, id = "Country" )
+hdi_cntry2 <- rename(hdi_cntry2,c("Country"= "cntry","variable" = "Year","value" = "HDI"))
+hdi_cntry2$essround <- ifelse(hdi_cntry2$Year == "X2010", 5,
+                               ifelse(hdi_cntry2$Year == "X2012", 6,
+                                      ifelse(hdi_cntry2$Year == "X2014", 7,
+                                             ifelse(hdi_cntry2$Year == "X2016", 8,
+                                                    ifelse(hdi_cntry2$Year == "X2018", 9, NA)))))
+
+country_data <- full_join(gini_cntry2,gdp_cntry2, by = c("cntry","essround","Year"))
+country_data <- full_join(country_data,hdi_cntry2, by = c("cntry","essround","Year"))
+country_data <- country_data[!is.na(country_data$essround),]
+
+dirdata1 <- "C:/Users/pamel/Documents/ESS/All rounds/"
+ds_all1 <- haven::read_spss(paste0(dirdata1,"ESS1-8e01.sav"))
+ds_all1 = add_labelled_class(ds_all1)
+
+dirdata <- "C:/Users/pamel/Documents/ESS/2018 (round 9)/"
+ds_91 <- haven::read_spss(paste0(dirdata,"ESS9e01_2.sav"))
+ds_91 = add_labelled_class(ds_91)
+
+ds <- rbind(ds_all1[names(ds_all1)[names(ds_all1) %in% names(ds_91)]],
+            ds_91[names(ds_all1)[names(ds_all1) %in% names(ds_91)]])
+ds$cntry <- as.factor(as.character(ds$cntry))
+
+round <- c(5,6,7,8,9) 
+countries <- unique(ds[,"cntry"])$cntry
+
+country_data <- country_data %>% filter(cntry %in% countries & essround %in% round)
+
+ds <- ds %>% filter(cntry %in% countries & essround %in% round)
+ds <- copy_labels(ds, ds)
+
+ds <- left_join(ds,country_data,by = c("cntry","essround"))
+table(as_character(ds$cntry),ds$essround)
+
+ds$time <- ifelse(ds$essround == 5, 0,
+                  ifelse(ds$essround == 6, 1,
+                         ifelse(ds$essround == 7, 2,
+                                ifelse(ds$essround == 8, 3,
+                                       ifelse(ds$essround == 9, 4, NA)))))
+setwd(dirdata0)
+save(ds,file="ESS5-9Round.RData")
+```
+
+```{r data, include=FALSE,echo=FALSE, warning=FALSE , eval=FALSE}
+
+setwd("C:/Users/pamel/Documents/ESS/")
+load("ESS5-9Round.RData")
+
+#Human values from round 4 to 9
+# items_o <- c("ipshabt", "ipsuces", "iphlppl", "iplylfr", "ipfrule", "ipbhprp", "ipgdtim", 
+#           "impfun", "imprich", "iprspot", "impsafe", "ipstrgv", "ipcrtiv", "impfree", 
+#           "impdiff", "ipadvnt", "ipmodst", "imptrad", "ipeqopt", "ipudrst", "impenv") 
+# 
+#Media and social trust
+#items_o <- c("ppltrst","pplfair","pplhlp")
+#8 "nwsptot"  "nwsppol"  "netuse"
+#9 "nwspol","netusoft","netustm"
+
+#Attitute towards immigration
+#items_o <- c("imsmetn","imdfetn","impcntr","imbgeco","imueclt","imwbcnt")
+
+items_o <- c("imsmetn","imdfetn","impcntr","imbgeco","imueclt","imwbcnt","ppltrst","pplfair","pplhlp","ipshabt", 
+             "ipsuces", "iphlppl", "iplylfr", "ipfrule", "ipbhprp", "ipgdtim", "impfun", "imprich", "iprspot", 
+             "impsafe", "ipstrgv", "ipcrtiv", "impfree", "impdiff", "ipadvnt", "ipmodst", "imptrad", "ipeqopt", 
+             "ipudrst", "impenv")
+
+id <- c("essround","idno","cntry", "dweight", "hhmmb", "agea","eduyrs",
+          "GINI", "GDP", "HDI")
+vars <- c("gndr", "dvrcdeva", "domicil", "eisced")
+
+ds_filtradaAll <- ds[c(items_o,id,vars)]
+describe(ds_filtradaAll[,c(id,vars)])
+
+describeBy(ds_filtradaAll[,items_o], ds_filtradaAll$essround, mat = TRUE)
+
+recod3 <- c("ipshabt", "ipsuces", "iphlppl", "iplylfr", "ipfrule", "ipbhprp", "ipgdtim", 
+             "impfun", "imprich", "iprspot", "impsafe", "ipstrgv", "ipcrtiv", "impfree", 
+             "impdiff", "ipadvnt", "ipmodst", "imptrad", "ipeqopt", "ipudrst", "impenv")
+dat3 <- data.frame(reverse.code(keys = rep(-1,length(recod3)), 
+                                items = ds_filtradaAll[,recod3], 
+                                mini = rep(1,length(recod3)), 
+                                maxi = rep(6,length(recod3))))
+colnames(dat3) <- paste(recod3,"_r",sep = "")
+ 
+
+recod32 <- c("imsmetn","imdfetn","impcntr")
+dat32 <- data.frame(reverse.code(keys = rep(-1,length(recod32)), 
+                                items = ds_filtradaAll[,recod32], 
+                                mini = rep(1,length(recod32)), 
+                                maxi = rep(4,length(recod32))))
+colnames(dat32) <- paste(recod32,"_r",sep = "")
+ 
+ds_filtradaAll <- cbind(ds_filtradaAll, dat3, dat32)
+
+var_lab(ds_filtradaAll$hhmmb) <- "N° people in household"
+var_lab(ds_filtradaAll$agea) <- "Age"
+
+ds_filtradaAll$gndrD <- ifelse(ds_filtradaAll$gndr == 1, 0, 
+                               ifelse(ds_filtradaAll$gndr == 2, 1,ds_filtradaAll$gndr))
+var_lab(ds_filtradaAll$gndrD) <- "Gender (Female)"
+use_labels(ds_filtradaAll,table(gndrD,as.character(cntry)))
+
+ds_filtradaAll$dvrcdevaD <- ifelse(ds_filtradaAll$dvrcdeva == 2, 0, 
+                               ifelse(ds_filtradaAll$dvrcdeva == 1, 1,ds_filtradaAll$dvrcdeva))
+var_lab(ds_filtradaAll$dvrcdevaD) <- "Divorced (Yes)"
+use_labels(ds_filtradaAll,table(dvrcdevaD,as.character(cntry)))
+
+ds_filtradaAll$eiscedT <- ifelse(ds_filtradaAll$eisced %in% c(1,2,3) , 1,
+                              ifelse(ds_filtradaAll$eisced %in% c(4,5),2,
+                                     ifelse(ds_filtradaAll$eisced %in% c(6,7), 3,NA)))
+val_lab(ds_filtradaAll$eiscedT) = num_lab("
+            1 Less than Upper secondary
+            2 Upper secondary or vocational
+            3 Bachelor or higher
+")
+var_lab(ds_filtradaAll$eiscedT) <- "Educational level"
+use_labels(ds_filtradaAll,table(eiscedT,as.character(cntry)))
+eiscedD <- as.dichotomy(ds_filtradaAll$eiscedT, prefix="eisced")
+names(eiscedD)
+
+ds_filtradaAll$domicilT <- ifelse(ds_filtradaAll$domicil %in% c(4,5) , 1,
+                                  ifelse(ds_filtradaAll$domicil %in% c(3) , 2,
+                                         ifelse(ds_filtradaAll$domicil %in% c(2),3,
+                                                ifelse(ds_filtradaAll$domicil %in% c(1),4,NA))))
+
+val_lab(ds_filtradaAll$domicilT) <- num_lab("
+             1 Countryside 
+             2 Town or small city
+             3 Suburbs or outskirts of big city    
+             4 A big city
+")
+var_lab(ds_filtradaAll$domicilT) <- "Domicile"
+use_labels(ds_filtradaAll,table(domicilT,as.character(cntry)))
+domicilD <- as.dichotomy(ds_filtradaAll$domicilT, prefix="domicil")
+names(domicilD)
+ds_filtradaAll <- cbind(ds_filtradaAll, eiscedD, domicilD)
+
+exog <- c(items_o[!items_o %in% c(recod3,recod32)],names(dat3), names(dat32))
+items <- c(id,exog,"gndrD","dvrcdevaD",names(eiscedD),names(domicilD))
+
+
+ds_filtradacntry <- ds_filtradaAll %>% group_by(essround,cntry) %>% 
+  summarise(n = n(),
+            CntryAge = mean(agea, na.rm = TRUE),
+            CntryFemale = sum(gndrD, na.rm = TRUE)/ n,
+            CntryEduyrs = mean(eduyrs,na.rm=TRUE)) %>% select(-n)
+
+ds_filtradaAll <- left_join(ds_filtradaAll,ds_filtradacntry, by=c("essround","cntry"))
+
+
+newvars <- c("gndr", "dvrcdeva", "domicilT", "eiscedT","CntryAge","CntryFemale","CntryEduyrs")
+
+rm(list = c("dat3","dat32","domicilD","eiscedD","id","vars","items_o","recod3"))
+```
+
+# Scores 
+
+```{r cars, echo=FALSE, warning=FALSE, eval=FALSE}
+
+Model <- '
+achie =~ ipshabt_r + ipsuces_r
+confo =~ ipfrule_r + ipbhprp_r
+hedon =~ ipgdtim_r + impfun_r
+power =~ imprich_r + iprspot_r
+secur =~ impsafe_r + ipstrgv_r
+selfd =~ ipcrtiv_r + impfree_r
+stimu =~ impdiff_r + ipadvnt_r
+tradi =~ ipmodst_r + imptrad_r
+Benev =~ iphlppl_r + iplylfr_r
+Unive =~ ipeqopt_r + ipudrst_r + impenv_r
+Trust =~ ppltrst + pplfair + pplhlp
+Rejec =~ imsmetn_r + imdfetn_r + impcntr_r
+AtImm =~ imbgeco + imueclt + imwbcnt
+'
+
+for (r in c(5,6,7,8,9)) {
+  ds_filtrada <- ds_filtradaAll %>% filter(essround == r)
+
+  lavaan.fit3 <- lavaan(Model, data=ds_filtrada, auto.fix.first=TRUE,
+                       auto.var=TRUE, int.ov.free=TRUE,
+                       auto.cov.lv.x=TRUE,estimator="MLM",
+                       cluster = "cntry", meanstructure=TRUE)
+  assign(paste0("lavaan.fit3r",r),lavaan.fit3)
+  print(paste("Fit measures round:", r))
+  print(fitMeasures(lavaan.fit3, c("cfi", "rmsea", "srmr")))
+  
+  b0 <- data.frame(fitted(lavaan.fit3)$cov)
+  b1 <- data.frame(round(cov(ds_filtrada[,exog], use="complete.obs"),3))
+  b1 <- b1[names(b0), names(b0)]
+  b <- round(b0-b1,1)
+  
+  print(paste("Covariance difference round:", r))
+  print(b)
+  
+  fit = data.frame(fit = fitted(lavaan.fit3)$mean)
+  fit$rowname <- rownames(fit)
+  real = data.frame(real = round(colMeans(ds_filtrada[,exog], na.rm = TRUE),6))
+  real$rowname <- rownames(real)
+  a <- left_join(fit, real, by = "rowname")
+  a$dif <- round(a$fit - a$real,1)
+  print(paste("Means difference round:", r))
+  print(a)
+  
+  idx <- lavInspect(lavaan.fit3, "case.idx")
+  
+  fscores <- sapply(data.frame(lavPredict(lavaan.fit3)), 
+                    function(x) (x-min(x))/(max(x)-min(x))*100 ) #indicator (min 0 - max 100)
+  
+  for (fs in colnames(fscores)) {
+    ds_filtrada[idx, fs] <- fscores[ , fs]
+  }
+  assign(paste0("ds_filtrada",r),ds_filtrada)
+}
+
+ds_filtradaALLScores <- rbind(ds_filtrada5,ds_filtrada6,ds_filtrada7,ds_filtrada8,ds_filtrada9)
+
+latent <- c("selfd","stimu","hedon","achie","power","secur","confo","tradi","Benev",
+            "Unive","Trust","Rejec","AtImm")
+ds_filtradaALLScores %>% group_by(cntry) %>% summarise(selfd = mean(selfd, na.rm = TRUE),
+                                                       stimu = mean(stimu, na.rm = TRUE),
+                                                       hedon = mean(hedon, na.rm = TRUE),
+                                                       achie = mean(achie, na.rm = TRUE),
+                                                       power = mean(power, na.rm = TRUE),
+                                                       secur = mean(secur, na.rm = TRUE),
+                                                       confo = mean(confo, na.rm = TRUE),
+                                                       tradi = mean(tradi, na.rm = TRUE),
+                                                       Benev = mean(Benev, na.rm = TRUE),
+                                                       Unive = mean(Unive, na.rm = TRUE),
+                                                       Trust = mean(Trust, na.rm = TRUE),
+                                                       Rejec = mean(Rejec, na.rm = TRUE),
+                                                       AtImm = mean(AtImm, na.rm = TRUE)) 
+
+dir1 <- c("G:/My Drive/Master in Statistics/Multilevel analysis/Paper/")
+df <- remove_all_labels(ds_filtradaALLScores)
+# write.csv(df[!is.na(df$selfd),c(items[!items %in% exog], newvars,latent)],
+#           paste0(dir1,"MilWinData.csv"),
+#           row.names = FALSE)
+setwd(dir1)
+save(ds_filtradaALLScores,file="MLData.RData")
+```
+
+# Multilevel modelling
+
+```{r model, echo=TRUE, warning=FALSE}
+
+setwd("G:/My Drive/Master in Statistics/Multilevel analysis/Paper/")
+load("MLData.RData")
+
+# library(ggplot2)
+# 
+# print("# Trust")
+# 
+# ggplot(data = ds_filtradaALLScores, aes(x = eduyrs, y=Trust, group=cntry)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = cntry)) +
+#   facet_wrap(. ~ essround) +
+#   xlab("Years of education") + ylab("Trust index") +
+#   theme(legend.position = "none")
+# ggplot(data = ds_filtradaALLScores, aes(x = agea, y=Trust, group=cntry)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = cntry)) +
+#   facet_wrap(. ~ essround) +
+#   xlab("Age") + ylab("Trust index") +
+#   theme(legend.position = "none")
+# ggplot(data = na.omit(ds_filtradaALLScores[,c("gndr","cntry","essround","Trust")]), aes(x = factor(gndr), y=Trust, group=cntry)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = cntry)) +
+#   facet_wrap(. ~ essround) +
+#   xlab("Gender") + ylab("Trust index") +
+#   theme(legend.position = "none")
+# ggplot(data = ds_filtradaALLScores, aes(x = Benev, y=Trust, group=cntry)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = cntry)) +
+#   facet_wrap(. ~ essround) +
+#   xlab("Benevolence index") + ylab("Trust index") +
+#   theme(legend.position = "none")
+# ggplot(data = ds_filtradaALLScores, aes(x = eduyrs, y=Trust, group=essround)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = essround)) +
+#   facet_wrap(cntry ~ .) +
+#   xlab("Years of education") + ylab("Trust index") +
+#   theme(legend.position = "none")
+# ggplot(data = ds_filtradaALLScores, aes(x = agea, y=Trust, group=essround)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = essround)) +
+#   facet_wrap(cntry ~ .) +
+#   xlab("Age") + ylab("Trust index") +
+#   theme(legend.position = "none")
+# ggplot(data = na.omit(ds_filtradaALLScores[,c("gndr","cntry","essround","Trust")]), aes(x = factor(gndr), y=Trust, group=essround)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = essround)) +
+#   facet_wrap(cntry ~ .) +
+#   xlab("Gender") + ylab("Trust index") +
+#   theme(legend.position = "none")
+# ggplot(data = ds_filtradaALLScores, aes(x = Benev, y=Trust, group=essround)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = essround)) +
+#   facet_wrap(cntry ~ .) +
+#   xlab("Benevolence index") + ylab("Trust index") +
+#   theme(legend.position = "none")
+# 
+# 
+# ggplot(data = ds_filtradaALLScores, aes(x = CntryEduyrs, y=Trust, group=essround)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = essround)) +
+#   xlab("Country's Years of education") + ylab("Trust index") +
+#   theme(legend.position = "none") 
+# ggplot(data = ds_filtradaALLScores, aes(x = HDI, y=Trust, group=essround)) +
+#   geom_point()+
+#   geom_smooth(method = "lm", se = TRUE, aes(colour = essround)) +
+#   xlab("Country's HDI") + ylab("Trust index") +
+#   theme(legend.position = "none")
+
+
+
+ds_filtrada1 <- ds_filtradaALLScores %>% 
+  select(cntry,essround,Trust, agea, gndrD,gndr, eduyrs, Benev, HDI, cntry, essround, CntryEduyrs) %>%
+  na.omit() 
+  
+modelNull <- lmer(Trust ~  (1|cntry) + 
+                    (1|cntry:essround), 
+                  data=ds_filtrada1, REML=FALSE)
+summary(modelNull)
+nullvar <- as.data.frame(VarCorr(modelNull))[,c("grp","vcov","sdcor")]
+colnames(nullvar) <-  c("grp","vcov0","sdcor0")
+  nullvar %>% mutate(icc0=round(vcov0/sum(vcov0)*100,2)) %>% 
+  select(grp,vcov0,sdcor0,icc0)
+
+
+ds_filtrada1$Fit0 <- predict(modelNull)
+#Eduyrs
+model1a <- lmer(Trust ~ eduyrs + 
+                 (1|cntry) + 
+                 (1|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model1a))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model1a)
+ranova(model1a)
+
+model1b <- lmer(Trust ~ 1 + eduyrs + 
+                 (1 + eduyrs|cntry) + 
+                 (1         |cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model1b))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model1b)
+ranova(model1b)
+
+model1c <- lmer(Trust ~ 1 + eduyrs + 
+                 (1         |cntry) + 
+                 (1 + eduyrs|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model1c))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model1c)
+ranova(model1c)
+
+anova(model1a,model1b,model1c)
+#Age
+model2a <- lmer(Trust ~ agea + 
+                 (1|cntry) + 
+                 (1|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model2a))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model2a)
+ranova(model2a)
+
+model2b <- lmer(Trust ~ 1 + agea + 
+                 (1 + agea|cntry) + 
+                 (1       |cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model2b))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model2b)
+ranova(model2b)
+
+model2c <- lmer(Trust ~ 1 + agea + 
+                 (1       |cntry) + 
+                 (1 + agea|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model2c))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model2c)
+ranova(model2c)
+
+anova(model2a,model2b,model2c)
+
+#Gender
+model3a <- lmer(Trust ~ factor(gndr) + 
+                 (1|cntry) + 
+                 (1|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model3a))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model3a)
+ranova(model3a)
+
+model3b <- lmer(Trust ~ 1 + factor(gndr) + 
+                 (1 + factor(gndr)|cntry) + 
+                 (1       |cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model3b))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model3b)
+ranova(model3b)
+
+model3c <- lmer(Trust ~ 1 + factor(gndr) + 
+                 (1       |cntry) + 
+                 (1 + factor(gndr)|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model3c))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model3c)
+ranova(model3c)
+
+anova(model3a,model3b,model3c)
+
+
+#Benevolence
+model4a <- lmer(Trust ~ Benev + 
+                 (1|cntry) + 
+                 (1|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model4a))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model4a)
+ranova(model4a)
+
+model4b <- lmer(Trust ~ 1 + Benev + 
+                 (1 + Benev|cntry) + 
+                 (1       |cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model4b))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model4b)
+ranova(model4b)
+
+model4c <- lmer(Trust ~ 1 + Benev + 
+                 (1       |cntry) + 
+                 (1 + Benev|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model4c))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model4c)
+ranova(model4c)
+
+anova(model4a,model4b,model4c)
+
+#CntryEduyrs
+model5a <- lmer(Trust ~ CntryEduyrs + 
+                 (1|cntry) + 
+                 (1|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model5a))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model5a)
+ranova(model5a)
+
+model5b <- lmer(Trust ~ 1 + CntryEduyrs + 
+                 (1 + CntryEduyrs|cntry) + 
+                 (1       |cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model5b))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model5b)
+ranova(model5b)
+
+model5c <- lmer(Trust ~ 1 + CntryEduyrs + 
+                 (1       |cntry) + 
+                 (1 + CntryEduyrs|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model5c))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model5c)
+ranova(model5c)
+
+anova(model5a,model5b,model5c)
+
+#HDI
+model6a <- lmer(Trust ~ HDI + 
+                 (1|cntry) + 
+                 (1|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+VarCorr(model6a)
+anova(model6a)
+ranova(model6a)
+
+model6b <- lmer(Trust ~ 1 + HDI + 
+                 (1 + HDI|cntry) + 
+                 (1       |cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model6b))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model6b)
+ranova(model6b)
+
+model6c <- lmer(Trust ~ 1 + HDI + 
+                 (1       |cntry) + 
+                 (1 + HDI|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model6c))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model6c)
+ranova(model6c)
+
+anova(model6a,model6b,model6c)
+
+model7 <- lmer(Trust ~ 1 + agea + eduyrs + Benev + CntryEduyrs*gndrD + HDI +
+                 (1 |cntry) + 
+                 (1 |cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model7))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model7)
+ranova(model7)
+
+model8 <- lmer(Trust ~ 1 + gndrD + agea + eduyrs + Benev + CntryEduyrs + HDI + 
+                 (1 + eduyrs + agea + gndrD + Benev|cntry) + 
+                 (1 + Benev + HDI|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model8))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model8)
+ranova(model8)
+model9 <- lmer(Trust ~ 1 + gndrD + agea + eduyrs + Benev + CntryEduyrs + HDI + 
+                 (1 + eduyrs|cntry) + 
+                 (1|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(model9))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(model9)
+ranova(model9)
+
+
+modelGood <- lmer(Trust ~ 1 + agea + eduyrs + Benev + HDI + 
+                    (1|cntry) + 
+                    (1|cntry:essround),
+              data=ds_filtrada1, REML=FALSE)
+nullvar %>% left_join(as.data.frame(VarCorr(modelGood))[,c("grp","vcov","sdcor")]) %>% 
+  mutate(varexp = round((vcov0-vcov)/sum(vcov0)*100,2))
+anova(modelGood)
+ranova(modelGood)
+
+```
+
