@@ -1,0 +1,69 @@
+---
+title: "Loglinear models and latent class analysis" 
+author: Pamela Inostroza Fernández
+date: "Master in Statistics 2020/2021"
+output:
+  bookdown::pdf_document2:
+    dev: cairo_pdf
+    keep_tex: yes
+    #template: svm-latex-article2.tex
+    toc: no
+    fig_caption: yes 
+endnote: no
+fontsize: 12pt
+geometry: margin=1in
+#keywords: mclm, r, correspondence analysis, frequencylist
+mainfont: Times New Roman
+biblio-style: ksfh_nat
+sansfont: Quicksand
+sansitup: yes
+#thanks: 'All codes and txt files available [github.com/PamelaInostroza/.
+#  **Current version**: January 22, 2021; **Corresponding author**: inostroza.f.pamela@gmail.com.'
+abstract: 
+header-includes:
+ \usepackage[font=small,format=plain,labelfont=bf,up,textfont=normal,up,justification=justified,singlelinecheck=false]{caption}
+ \usepackage{float}
+ \usepackage{subfig}
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, warning=FALSE, echo=FALSE, message=FALSE}
+# Libraries used in the analysis
+#knitr::opts_chunk$set(fig.width=6, fig.height=4, fig.path='Figs/', fig.cap="left-aligned", fig.pos = 'H',echo=FALSE, warning=FALSE, message=FALSE)
+options(knitr.kable.NA = '')
+options(scipen=999)
+
+library(tidyverse) 
+library(knitr)
+library(kableExtra)
+```
+
+
+# Exercise 1  
+
+1. Table 1 presents the unweighted results from a contingency table of geographic region by education level for a sample of Belgian citizens (surveyed in the European Social Survey). The six levels of education range from “Primary education or less” to “University education”.
+    
+```{r table1}
+rows<-c("Primary or less education", "Lower secondary education", "Higher secondary education", "Higher education, short type", "Higher education, long type", "University education", "Total")
+tb1 <- matrix(c(6,62,43,14,169,100,46,327,186,16,174,72,6,44,23,21,72,42), ncol = 3, byrow = TRUE)
+tb1 <- addmargins(tb1)
+rownames(tb1) <- rows
+colnames(tb1) <- c("BRU","FLD", "WAL", "Sum")
+
+kbl(tb1, col.names = c("Brussels Capital Region", "Flemish Region", "Walloon Region", "Total"), caption = "Region by education - 15-64 year-olds - Belgium \n(unweighted data from European Social Survey)", format.args = list(decimal.mark = '.', big.mark = ","))  %>%
+  kable_classic_2(full_width = F, latex_options = c("HOLD_position")) %>% 
+  column_spec(2:5, width = "2.5cm")
+```
+
+a. Calculate the local odds ratios for the region by education table.
+
+The odds ratios in a 6x3 contingency table are calculated using the (6-1)*(3-1) = 10 local odds ratios. An additional column is calculated in table \ref{tab:odds} with the odds between Brussels and Walloon to improve interpretation.  
+
+$\theta_{Brussels/Flemish}=\frac{n_{11}n_{22}}{n_{12}n_{21}}*\frac{n_{21}n_{32}}{n_{22}n_{31}}*\frac{n_{31}n_{42}}{n_{32}n_{41}}*\frac{n_{41}n_{52}}{n_{42}n_{51}}*\frac{n_{51}n_{62}}{n_{52}n_{61}}$
+
+$\theta_{Flemish/Walloon}=\frac{n_{12}n_{23}}{n_{13}n_{22}}*\frac{n_{22}n_{33}}{n_{23}n_{32}}*\frac{n_{32}n_{43}}{n_{33}n_{42}}*\frac{n_{42}n_{53}}{n_{43}n_{52}}*\frac{n_{52}n_{63}}{n_{53}n_{62}}$
+
+$\theta_{Brussels/Walloon}=\theta_{Brussels/Flemish}*\theta_{Flemish/Walloon}$  
+

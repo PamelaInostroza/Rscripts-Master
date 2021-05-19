@@ -1,0 +1,19 @@
+LEM: log-linear and event history analysis with missing data.
+Developed by Jeroen Vermunt (c), Tilburg University, The Netherlands.
+Version 1.0 (September 18, 1997).
+
+loading data
+iteration   log-likelihood      stop-criterion         L-squared
+     0     -12761.91754334     -12761.91754334     5174.11540167
+     1     -10174.85984251       2587.05770083       -0.00000000
+     2     -10174.85984251          0.00000000       -0.00000000
+standard errors
+Warning: Information matrix is not full rank (54, 8.1E-0004)
+Warning: Information matrix is not full rank (63,-1.7E-0002)
+Warning: Information matrix is not full rank (66, 5.3E-0003)
+Warning: Information matrix is not full rank (69, 7.2E-0003)
+Warning: Information matrix is not full rank (70,-3.0E-0004)
+Warning: Information matrix is not full rank (72,-9.4E-0003)
+statistics and frequencies
+log-linear parameters
+cpu-time = 0.43 seconds

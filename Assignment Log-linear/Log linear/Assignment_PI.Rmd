@@ -1,0 +1,943 @@
+---
+title: "Loglinear models and latent class analysis" 
+author: Pamela Inostroza Fernández
+date: "Master in Statistics 2020/2021"
+output:
+  bookdown::pdf_document2:
+    dev: cairo_pdf
+    keep_tex: yes
+    #template: svm-latex-article2.tex
+    toc: no
+    fig_caption: yes 
+endnote: no
+fontsize: 12pt
+geometry: margin=1in
+#keywords: mclm, r, correspondence analysis, frequencylist
+mainfont: Times New Roman
+biblio-style: ksfh_nat
+sansfont: Quicksand
+sansitup: yes
+#thanks: 'All codes and txt files available [github.com/PamelaInostroza/.
+#  **Current version**: January 22, 2021; **Corresponding author**: inostroza.f.pamela@gmail.com.'
+abstract: 
+header-includes:
+ \usepackage[font=small,format=plain,labelfont=bf,up,textfont=normal,up,justification=justified,singlelinecheck=false]{caption}
+ \usepackage{float}
+ \usepackage{subfig}
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, warning=FALSE, echo=FALSE, message=FALSE}
+# Libraries used in the analysis
+knitr::opts_chunk$set(fig.width=6, fig.height=4, fig.path='Figs/', fig.cap="left-aligned", fig.pos = 'H',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+options(knitr.kable.NA = '')
+options(scipen=999)
+
+library(tidyverse) 
+library(knitr)
+library(kableExtra)
+```
+
+
+# Exercise 1  
+
+1. Table 1 presents the unweighted results from a contingency table of geographic region by education level for a sample of Belgian citizens (surveyed in the European Social Survey). The six levels of education range from “Primary education or less” to “University education”.
+    
+```{r table1}
+rows<-c("Primary or less education", "Lower secondary education", "Higher secondary education", "Higher education, short type", "Higher education, long type", "University education", "Total")
+tb1 <- matrix(c(6,62,43,14,169,100,46,327,186,16,174,72,6,44,23,21,72,42), ncol = 3, byrow = TRUE)
+tb1 <- addmargins(tb1)
+rownames(tb1) <- rows
+colnames(tb1) <- c("BRU","FLD", "WAL", "Sum")
+
+kbl(tb1, col.names = c("Brussels Capital Region", "Flemish Region", "Walloon Region", "Total"), caption = "Region by education - 15-64 year-olds - Belgium \n(unweighted data from European Social Survey)", format.args = list(decimal.mark = '.', big.mark = ","))  %>%
+  kable_classic_2(full_width = F, latex_options = c("HOLD_position")) %>% 
+  column_spec(2:5, width = "2.5cm")
+```
+
+a. Calculate the local odds ratios for the region by education table.
+
+The odds ratios in a 6x3 contingency table are calculated using the (6-1)*(3-1) = 10 local odds ratios. An additional column is calculated in table \ref{tab:odds} with the odds between Brussels and Walloon to improve interpretation.  
+
+$\theta_{Brussels/Flemish}=\frac{n_{11}n_{22}}{n_{12}n_{21}}*\frac{n_{21}n_{32}}{n_{22}n_{31}}*\frac{n_{31}n_{42}}{n_{32}n_{41}}*\frac{n_{41}n_{52}}{n_{42}n_{51}}*\frac{n_{51}n_{62}}{n_{52}n_{61}}$
+
+$\theta_{Flemish/Walloon}=\frac{n_{12}n_{23}}{n_{13}n_{22}}*\frac{n_{22}n_{33}}{n_{23}n_{32}}*\frac{n_{32}n_{43}}{n_{33}n_{42}}*\frac{n_{42}n_{53}}{n_{43}n_{52}}*\frac{n_{52}n_{63}}{n_{53}n_{62}}$
+
+$\theta_{Brussels/Walloon}=\theta_{Brussels/Flemish}*\theta_{Flemish/Walloon}$  
+
+
+```{r odds}
+
+t11=(tb1[1,1]*tb1[2,2])/(tb1[1,2]*tb1[2,1])
+t12=(tb1[1,2]*tb1[2,3])/(tb1[1,3]*tb1[2,2])
+t21=(tb1[2,1]*tb1[3,2])/(tb1[2,2]*tb1[3,1])
+t22=(tb1[2,2]*tb1[3,3])/(tb1[2,3]*tb1[3,2])
+t31=(tb1[3,1]*tb1[4,2])/(tb1[3,2]*tb1[4,1])
+t32=(tb1[3,2]*tb1[4,3])/(tb1[3,3]*tb1[4,2])
+t41=(tb1[4,1]*tb1[5,2])/(tb1[4,2]*tb1[5,1])
+t42=(tb1[4,2]*tb1[5,3])/(tb1[4,3]*tb1[5,2])
+t51=(tb1[5,1]*tb1[6,2])/(tb1[5,2]*tb1[6,1])
+t52=(tb1[5,2]*tb1[6,3])/(tb1[5,3]*tb1[6,2])
+
+local <- matrix(c(t11,t12,t21,t22,t31,t32,t41,t42,t51,t52),nrow = 5, byrow = TRUE)
+rownames(local) <- c("Primary or less: Lower secondary", "Lower secondary: Higher secondary","Higher secondary: Higher, short type", "Higher, short type: Higher, long type", "Higher, long type: University")
+colnames(local)<-c("c1", "c2")
+local<-data.frame(local)
+local$c3<-local$c2*local$c1
+
+kbl(local, digits = 2, col.names = c("Brussels/Flemish", "Flemish/Walloon", "$Brussels/Walloon^1$"), caption = "Local odds ratios", escape = FALSE) %>% 
+  kable_classic_2(full_width = F, latex_options = c("HOLD_position")) %>% 
+  column_spec(1, width = "3.5cm") %>% 
+  footnote(number = "Extra column to interpret relation between Brussels and Walloon")
+
+# colnames(tb1) <-c("Brussels Capital Region", "Flemish Region", "Walloon Region", "Total")
+# mosaicplot(tb1[-7,-4], col=c("firebrick", "goldenrod1"), cex.axis = 0.5, sub = "Region", dir = c("h","v"), main = "Belgian citizens", ylab = "Relative frequency")
+
+```
+
+b. Interpret the relationship in terms of odds ratios.
+    
+Odds of a Brussels resident to have Primary or less education (versus Lower secondary ) is 1.17 times Flemish residents. Meanwhile the odds of a Walloon is the same those who reside in Brussels.
+
+Odds of a Flemish resident to have Lower secondary education (versus Higher secondary) is almost the same as a Walloon resident and half those who live in Brussels.  
+
+Odds of a Brussels resident to have Higher secondary education (versus Higher, short type) is 1.53 that of Flemish region and 1.11 those in Walloon region.  
+
+Odd of a Flemish resident to have Higher, short type (versus Long type education) is 1.49 those in Brussels and 1.26 those in Walloon region.    
+
+The odds of Flemish resident to have Higher, long type education (versus University) is 1.12 times those who live in Walloon region and 2.12 times those who live in Brussels.     
+
+2. Due to differential non-response, the distribution of completed interviews for this sample of Belgian citizens does not match that found in the Belgian Labour Force statistics (see table 2 below).
+
+```{r table2}
+tb2 <- matrix(c(171796,954045,596239,168191,1040981,604826,240671,1872732,991640,69168,726410,323215,60079,207366,134066,168169,425786,221696), ncol = 3, byrow = TRUE)
+tb2 <- addmargins(tb2)
+rownames(tb2) <- rows
+colnames(tb2) <- c("BRU","FLD", "WAL", "Sum")
+kbl(tb2, col.names = c("Brussels Capital Region", "Flemish Region", "Walloon Region", "Total"), caption = "Region by education - active population in Belgium \n(based on weighted data from Labour Force Statistics", format.args = list(decimal.mark = '.', big.mark = ",")) %>%
+  kable_classic_2(full_width = F, latex_options = c("HOLD_position")) %>% 
+  column_spec(2:5, width = "2.5cm")
+
+```
+
+a. This table can be re-estimated in such a way that all marginal frequencies for the survey data equal those of Belgian Labour Force statistics (Table 3) and the original relationships present in the bivariate survey table (Table 1). This re-estimation can be done via a Deming-Stephan Adjustment. Describe in words what the procedure does, and what the steps are in the adjustment process.
+
+Deming Stephan adjustment or Iterative Proportional Fitting change the distribution of cases within a contingency table to give the table pre-specified marginal distributions while maintaining the relative cell sizes (odds ratios) within the table. For this, it is necessary to calculate the marginals and fix them.  Next, adjust according to row marginal, followed by adjustment according to column marginal. This process is repeated until convergence.  
+
+$\hat m_{ij}^{(0)}=\hat m_{ij}^{(0)}(\frac{f_{i+}}{\hat m_{i+}^{(0)}})$ for $f_{i+}$  
+
+$\hat m_{ij}^{(2)}=\hat m_{ij}^{(1)}(\frac{f_{i+}}{\hat m_{i+}^{(1)}})$ for $f_{+j}$
+
+b. Next, proceed with the re-estimating of the table as described above - i.e. marginal frequencies for the survey data equal those of Belgian Labour Force statistics and the original relationships present in the bivariate survey table are still present in the new table; prove the latter using odds ratios. (Note: the re-estimated table can be calculated by hand or with support of the Lem program.)
+
+Lem program was used to estimate the odds ratios for the saturated model, the relationships from the European Social Survey was used with the code shown below.  
+`r paste0("man 2\n
+dim 6 3\n
+lab E C\n
+mod {EC}")`
+
+The simulated table that contains marginal frequencies from the Belgian Labour Force statistics (table \ref{tab:row} and \ref{tab:col}) was used to calculate the estimated response using the odds ratios obtained from the European Social Survey, the code in Lem program is shown next.  
+
+`r paste0("
+mod {E, C, wei(EC)}\n
+sta wei(EC) [0.7764 1.0159 1.2679 0.7380 1.1281 1.2012 1.0643 0.9581 0.9807 0.8913 1.2275 0.9140 1.0722 0.9957 0.9366 1.7160 0.7451 0.7821]
+")`
+
+
+```{r tbd}
+library(scales)
+row_marg <- percent(prop.table(margin.table(tb2[-7,-4],margin = c(1))),big.mark = ",", accuracy = 0.1)
+col_marg <- percent(prop.table(margin.table(tb2[-7,-4],margin = c(2))),big.mark = ",", accuracy = 0.1)
+attr(col_marg, "names")<-c("Brussels", "Flanders", "Walloon")
+
+kbl(row_marg, digits = 1, caption = "Row Marginal", col.names = c("Distribution"), align = "r", label = "row")  %>%
+  kable_classic_2(full_width = F, latex_options = c("HOLD_position"))
+
+kbl(col_marg, digits = 1, caption = "Column Marginal", col.names = c("Distribution"), align = "r", label = "col")  %>%
+  kable_classic_2(full_width = F, latex_options = c("HOLD_position"))
+
+tblbase <- round(tb2[-7,-4]/10000,0)
+tblbase <- addmargins(tblbase)
+# round(prop.table(margin.table(tblbase[-7,-4], margin = 1))*100,1)
+# round(prop.table(margin.table(tblbase[-7,-4], margin = 2))*100,1)
+
+adj<-matrix(c(12.439, 96.055, 63.507, 11.979, 108.065, 60.956, 33.719, 179.143, 97.138, 9.081, 73.807, 29.113, 4.342, 23.799, 11.859, 16.441, 42.132, 23.427), ncol = 3, byrow = TRUE)
+adj<-addmargins(adj)
+rownames(adj) <- rows
+colnames(adj) <- c("Brussels", "Flanders", "Walloon", "Sum")
+# round(prop.table(margin.table(adj[-7,-4], margin = 1))*100,1)
+# round(prop.table(margin.table(adj[-7,-4], margin = 2))*100,1)
+```
+
+Table \ref{tab:tb2} corresponds to the adjusted sample used in the European Social Survey with the relationships between Educational level and geographical region.  
+It is also possible to indicate that the odds ratios calculated using the adjusted table are the same as indicated in table \ref{tab:odds} as can be seen in the Figure \ref{fig:tb2}.  
+
+```{r tb2, fig.cap="Odds ratio of adjusted table (weigthed data)"}
+kbl(adj, digits = 1,col.names = c("Brussels Capital Region", "Flemish Region", "Walloon Region", "Total"), caption = "Region by education - 15-64 year-olds - Belgium \n(Weighted data from European Social Survey using Belgian Labour Force statistics)", format.args = list(decimal.mark = '.', big.mark = ","))  %>%
+  kable_classic_2(full_width = F, latex_options = c("HOLD_position")) %>% 
+  column_spec(2:5, width = "2.5cm")
+
+library(vcd)
+o1<-vcd::oddsratio(adj[-7,-4], log = FALSE)
+o2<-vcd::oddsratio(tb1[-7,-4], log = FALSE)
+
+o1 %>% data.frame() %>% 
+  ggplot(aes(x=Var1,y=OR, group = Var2, color = Var2)) + geom_line() +
+  geom_label(aes(label = round(OR,2), color = Var2), show.legend = FALSE, size = 3) +
+    scale_fill_brewer(type="seq", palette="Greys") +
+    theme_bw() + 
+    ggtitle("Odds ratios educational level by geographical region - Adjusted table") +
+    labs(x = "Educational level", y = "OR") + 
+    theme(legend.position = "top", title = element_text(size=9),
+          axis.text.x=element_text(vjust = 0.5, hjust = 0.5, size = 9),
+          panel.grid.major.y=element_blank(), legend.title = element_blank()) +
+    scale_x_discrete(label = function(x) str_wrap(x,15)) +
+    guides(fill=guide_legend(nrow=2,byrow=TRUE, colour = guide_legend("", override.aes = list(size = 7, alpha = 1)))) +
+    #scale_y_continuous(breaks = c(0.25,0.5,0.75)) +
+    geom_hline(yintercept=c(1), linetype = "dashed", size = 0.3, color = "gray")
+
+
+
+adj1<-as.data.frame(adj[-7,-4])
+adj1$Edu <- abbreviate(str_remove(rownames(adj)[-7],"education|or"), 7)
+adj1$Edu <- abbreviate(str_remove(rownames(adj)[-7],"education|or"), 7)
+tdata <- reshape2::melt(adj1, value.name = "Freq", variable.name = "Reg")
+#cotabplot(Freq ~  Reg+Edu, data=tdata, panel = cotab_assoc)
+
+
+# STD <- structable(~Edu + Reg, data = tdata)
+# pairs(STD, highlighting = 2, diag_panel = pairs_diagonal_mosaic,
+# diag_panel_args = list(fill = grey.colors))
+```
+
+\newpage  
+
+# Exercise 2  
+
+```{r data}
+setwd("C:/Users/pamel/OneDrive - KU Leuven/Master in Statistics/Log linear, latent class, logistic/Assignment")
+library(haven)
+ISG <- read_sav(file.path("Data/ISGBFLC3.sav"))
+ISE <- read_sav(file.path("Data/ISEBFLC3.sav"))
+
+ISGf <- ISG %>% select(IDSTUD, S_NISB, S_GENDER, S_AGE, S_IMMIG)
+ISEf <- ISE %>% select(IDSTUD, ES3G06B, ES3G04A, ES3G04B, ES3G04C, ES3G04D, ES3G04E)
+#ISEf <- ISE %>% select(ES3G01F, ES3G05G, ES3G05H, ES3G06B, IS3G25A, IS3G25B, IS3G25C, IS3G25D, IS3G25E)
+
+datas <- full_join(ISGf, ISEf, by=("IDSTUD"))
+datas$AGE <- factor(ifelse(datas$S_AGE < 14, "13 years old", ifelse(datas$S_AGE >= 14, "14 years old", NA)))
+datas$GENDER <- factor(ifelse(datas$S_GENDER == 1, "Girl", "Boy"))
+#datas$IMMIG <- factor(ifelse(datas$S_IMMIG %in% c(2,3), "Parents born abroad", "At least one parent born in country"))
+datas$IMMIG <- factor(datas$S_IMMIG, labels = c("At least one parent born in country", "Students born in country but parent(s) born abroad", "Students and parent(s) born abroad"))
+datas$NISB <- factor(ifelse(datas$S_NISB <= -0.68, "Level 1 (lowest)", 
+                          ifelse(datas$S_NISB > -0.68 & datas$S_NISB <= 0.0525, "Level 2", 
+                                 ifelse(datas$S_NISB > 0.0525 & datas$S_NISB <= 0.86, "Level 3", ifelse(datas$S_NISB > 0.86, "Level 4 (highest)", NA)))))
+datas$ES3G06B <- factor(datas$ES3G06B, labels = c("Strongly agree", "Agree", "Disagree", "Strongly disagree"))
+
+haven::write_sav(datas, "BFL_ICCS16.sav")
+data4 <- datas %>%  dplyr::select(NISB, GENDER, IMMIG, ES3G06B)
+data5 <- datas %>%  dplyr::select(ES3G04A, ES3G04B, ES3G04C, ES3G04D, ES3G04E)
+```
+
+1. Create a 4 or 5-dimensional contingency table in which one of the variables will be treated as the dependent variable. The dependent variable, and at least one of the independent variables, should have at least three categories.
+
+a. Include the table in your assignment  
+
+```{r tex11}
+#str(data4)
+#attr(ISE$ES3G06B, "label")
+
+tdata4 <- vcd::structable(data = data4, ES3G06B ~  NISB + IMMIG + GENDER)
+tdata <- reshape2::dcast(as.data.frame(tdata4), IMMIG + NISB + GENDER ~ ES3G06B )
+kbl(tdata,
+    col.names = c("Immigration status (I)", "Socio economical level (S)","Gender (G)",  "Strongly agree", "Agree", "Disagree", "Strongly disagree"), 
+    caption = "Contingency table - Belgium(Flanders)") %>%
+  footnote(general_title = "Source: ", "International Civic and Citizenship Education Study (ICCS) 2016") %>% 
+  kable_classic_2(full_width = F) %>% 
+  kable_styling(latex_options = c("HOLD_position")) %>%
+  column_spec(1:3, width = "2.2cm") %>%
+  column_spec(4:7, width = "1.5cm") %>%
+  add_header_above(c(" " = 3, "In my country immigrants are more exposed \nto unfair treatment than other groups (U)" = 4)) %>% 
+  collapse_rows(columns = 1:2, valign = "top")
+
+```
+    
+b. Describe the variables selected  
+    
+- Immigration status (I): correspond to the immigration status of the student according to the country of born of the parents of the student (*At least one parent born in the country*, *Students born in country but parent(s) born abroad* and *Students and parent(s) born abroad* categories).  
+- Socio-economical level (S): Level of socio economical background, level 1 indicate lower socio-economical background of the student, on the other hand, level 4 indicate highest level (*Level 1, level 2, level 3, level 4*).    
+- Gender (G): correspond to the gender of the student (*Boy* and *Girl* categories).    
+- Unfair treatment (U): Dependent variable, perception of student regarding immigrants are more exposed to unfair treatment than other groups (*Strongly agree*, *Agree*, *Disagree*, *Strongly disagree* response options).  
+    
+c. Formulate an initial set of hypotheses about the expected relationships between the variables (e.g. by referring to earlier studies on the topic) Note: take care that there enough observations in your contingency table, but also not too many (e.g. when taking data from a multi-country dataset, such as the European Social Survey or Eurobarometer, start by selecting the data from just one of the countries and focus your analysis on this country).  
+
+Many studies have concluded that men and women differ in their attitudes towards immigrants, it is expected that this relationships it also related to the student's perception of unfair treatment towards immigrants. The immigrant background of a student is also expected to influence their perception about fair treatment, as they will have different perspectives regarding if they are first generation of natives, second generation or immigrants. Finally the socio economical background it is also expected to be related to the perception studied, by associating high socio-economical background with high cultural and educational level.  
+
+In analyses conducted separately for residents with different migratory backgrounds, it was found that native women had a greater tendency than their male counterparts to associate the threat of crime with a general threat. Among first-generation immigrants, men put more emphasis on the out-group size threat, whereas women placed greater stress on the importance of the culture threat. Among second-generation immigrants, men and women differed with respect to their perception of job, cultural, and out-group size threats.
+
+2. Use Aitkin’s Simultaneous Testing Procedure, taking multiple testing into account, to draw conclusions about the different “families of effects” that may contain significant effects that will be important when describing the associations in the table.
+
+Using multiple testing, $\gamma$ is controlled between 0.25 and 0.5 and $\alpha$ is determined with a reasonable compromise between Type-I and Type-II errors. 
+We use the following formula to obtain Type I error, $\alpha = 1-(1-\gamma)^{1/k}$ and calculate for each hypothesis P(reject at least one $H_0$ wrongly with $k$ tests): $\gamma = 1-(1-\alpha)^k$.  
+
+```{r tex12, results='asis'}
+# tdata4n <- vcd::structable(data = lapply(data4, as.numeric), ES3G06B ~ IMMIG + NISB + GENDER)
+# write.table(as.data.frame(tdata4n), "LEMex1.txt", quote = FALSE, row.names = FALSE)
+
+tdata4 <- vcd::structable(data = data4, ES3G06B ~  GENDER + IMMIG + NISB)
+tdata <- reshape2::dcast(as.data.frame(tdata4), IMMIG + GENDER + NISB ~ ES3G06B )
+
+mod0 <- glm(Freq ~ 1, data = tdata4, family = poisson)
+mod1 <- glm(Freq ~ ES3G06B + GENDER + IMMIG + NISB, data = tdata4, family = poisson, 
+            contrasts = list(ES3G06B=contr.sum(4), GENDER=contr.sum(2), IMMIG=contr.sum(3), NISB=contr.sum(4)))
+mod2 <- glm(Freq ~ ES3G06B*GENDER + ES3G06B*IMMIG + ES3G06B*NISB + GENDER*IMMIG + GENDER*NISB + IMMIG*NISB, data = tdata4, family = poisson, 
+            contrasts = list(ES3G06B=contr.sum(4), GENDER=contr.sum(2), IMMIG=contr.sum(3), NISB=contr.sum(4)))
+mod3 <- glm(Freq ~ ES3G06B*GENDER*IMMIG + ES3G06B*GENDER*NISB + GENDER*NISB*IMMIG + NISB*IMMIG*ES3G06B, data = tdata4, family = poisson, 
+            contrasts = list(ES3G06B=contr.sum(4), GENDER=contr.sum(2), IMMIG=contr.sum(3), NISB=contr.sum(4)))
+mod4 <- glm(Freq ~ (ES3G06B*GENDER*IMMIG*NISB), data = tdata4, family = poisson, 
+            contrasts = list(ES3G06B=contr.sum(4), GENDER=contr.sum(2), IMMIG=contr.sum(3), NISB=contr.sum(4)))
+
+gamma <- 0.3
+alp <- round(1-(1-gamma)^(1/(3*4*2*4)),4)
+k <- c(mod0$df.residual+1,mod1$df.residual+1,mod2$df.residual+1,mod3$df.residual+1)
+l2 <- c(1 - pchisq(deviance(mod0),mod0$df.residual+1), 1 - pchisq(deviance(mod1), mod1$df.residual+1), 
+        1 - pchisq(deviance(mod2), mod2$df.residual+1),
+        1 - pchisq(deviance(mod3), mod3$df.residual+1))
+r<-c(1-(1-alp)^k)
+
+astp <- NULL
+astp$Hypothesis <- c("$H_0:$ all $1^{st}$ \\& higher=0", "$H_0:$ all $2^{nd}$ \\& higher=0", "$H_0:$ all $3^{rd}$ \\& higher=0", "$H_0:$ all $4^{th}$ = 0")
+astp$calculation = paste0("$\\gamma = 1-(1-",alp,")^{",k,"}=",round(r,3),"$")
+astp$comparison = paste0(ifelse(round(l2,3)==0, paste0(round(l2,3),".000"), round(l2,3)),ifelse(round(l2,3) < round(r,3),"<",">"), round(r,3))
+astp$conclusion = ifelse(round(l2,3) < round(r,3), "Reject $H_0$", "Accept $H_0$")
+
+kbl(data.frame(astp),  caption = paste("Aitkin’s Simultaneous Testing Procedure, all $k+1$ and higher effects for $\\gamma = ", gamma, "$"), escape = F, col.names = c("Hypothesis", "Calculation of $\\gamma$", "Comparison with output", "Conclusion")) %>%
+  kable_styling(latex_options = c("HOLD_position"), full_width = FALSE) %>%
+  column_spec(c(1,3), width = "3cm") %>%
+  column_spec(2, width = "4.5cm") %>%
+  column_spec(4, width = "2cm") 
+```
+
+As indicated in table \ref{tab:tex12}, for $\gamma < 0.3$ and $\alpha=$ `r alp`, there is no evidence to reject hypotheses that all 3rd and 4th interactions are equal to 0. For $\gamma >= 0.3$ it is possible to reject these hypotheses. This conclusion indicate that by allowing to have a Type I error of `r alp` and Type II error of `r gamma`, it is necessary to only study main effects and 2nd order interactions.  
+
+3. (Re-)formulate the loglinear model into a multinomial logit model (using dummy coding for both the dependent and independent variables). Explain what is the most important difference between these two models (dependent quantity).
+
+Log-linear models describe the associations between two or more categorical variables in a statistical model, in this case the saturated model will look like {UIGS}:
+
+Using this model we obtain the odds of Agree/Disagree/Strongly disagree (vs. Strongly agree). The dependent quantity is not the cell frequencies but the conditional odds $f_{1|jkl}/f_{2|jkl}$
+
+$log(f_{1|jkl}/f_{2|jkl}) = (\lambda_1^U-\lambda_2^U) + (\lambda_1^I-\lambda_2^I) + (\lambda_1^S-\lambda_2^S) + (\lambda_1^G-\lambda_2^G) + (\lambda_{1j}^{UI}-\lambda_{2j}^{UI})+ (\lambda_{1k}^{US}-\lambda_{2k}^{US})+ (\lambda_{1l}^{UG}-\lambda_{2l}^{UG})+ (\lambda_{1jkl}^{UISG}-\lambda_{2jkl}^{UISG})$
+
+On the other hand, saturated logit model, in this case with multiple response categories looks like, U|GIS {UGIS}.  
+The baseline-category logit model with predictor I, S and G is
+
+$log(\frac{\pi_j}{\pi_1})=\beta_{0j}+\beta_{1j}I+\beta_{2j}S+\beta_{3j}G$, with $j=2,3,4$
+
+4. Apply a backward selection procedure starting from the logit model with at least all 3-way interactions (also think about how to take into account the outcome of Aitkin’s simultaneous testing). Evaluate the acceptable models in terms of $L^{2}$ conditional testing and by using the AIC and BIC. Decide which model is the best fitting model.
+
+Likelihood ratio chi-square test will be used to evaluate how the model should be structured by removing effects. $L^2=2\sum_i\sum_j\sum_k\sum_l f_{ijkl}log(f_{ijkl}/\hat f_{ijkl})$
+
+Akaike’s Information Criterion ($AIC=L^2-2df$) which penalises for complexity and Bayesian Information Criterion ($BIC=L^2-(lnN)df$) that penalises for complexity and the number of observations are considered too.   
+
+```{r condit}
+Model <- c("U|ISG \\{UISG\\}", "U|ISG \\{ISU IGU SGU\\}","U|ISG \\{ISU SGU\\}",
+           "U|ISG \\{ISU GU\\}", "U|ISG \\{IU SU GU\\}")
+L2 <- c(-0.0000, 21.2158, 23.9661, 29.6688,49.8751)
+df<-c(0, 18,24,33,51)
+p<- c(0.0000, 0.2687, 0.4635, 0.6338,0.5184)
+AIC<-c(-0.0000, -14.7842, -24.0339, -36.3312,-52.1249)
+BIC<-c(-0.0000, -121.6312, -166.4966, -232.2174, -354.8581)
+  
+comparative <- bind_cols(model = Model, l2 = round(L2,2), df = df, p = round(p,2)) %>% 
+  mutate(dl2 = round(l2-lag(l2),2),
+         ddf = round(df - lag(df),2),
+         dp = round(1-pchisq(dl2,ddf),2)) %>% 
+  bind_cols(AIC= round(AIC,2), BIC = round(BIC,2))
+kbl(comparative[-c(1),], caption = "Conditional testing", col.names = c("Model","$L^2$","df","p","$\\Delta L^2$","$\\Delta df$", "$\\Delta p$", "AIC", "BIC"), escape = F) %>%
+  kable_styling(latex_options = c("HOLD_position"), full_width = FALSE) %>% 
+  row_spec(4, bold = TRUE)
+```
+
+Looking at the conditional testing for the logit model $U|ISG$ in table \ref{tab:condit} and considering the Aitkin's simultaneous testing result, that all 3rd and higher interactions were not significant different to zero,  eliminating conditional estimations does not affect the model significantly (all p-values are greater than 0.05). This means that keeping just the 2-way interaction, which are all significant at 5%, it is enough to have a good model. As all models have similar fit but last one is the less complex (more parsimonious), the homogeneous association model (no interaction term) is choose.      
+
+5. Discuss the model fit of this best fitting model also in terms of the dissimilarity index score, pseudo R² and size of the standardized residuals. 
+
+- By definition, Dissimilarity index takes values between 0 and 1, smaller values represent a better fit. It represents the proportion of sample cases that must move to different cells for the model to achieve a perfect fit. $D=\sum|n_i-\hat\mu_i|/2n=\sum|p_i-\hat\pi_i|/2$.
+In the selected model, the Dissimilarity index is 0.0293 which is very close to zero, this means that a 3% of the cases should be move to different cells for the model to achieve a perfect fit. This percentage seems reasonably to accept it as a good fit.  
+
+- Pseudo R-squared are based on explained variance between total variance(y) and error variance(e). $R^2=\frac{S_y^2-S_e^2}{S_y^2}$
+For this model the Pseudo R-squared measures shown in table \ref{tab:pseudo}. It is expected that this values for logit models are between 0.1 and 0.2 to be considered a good fit. In this case values are much lower than expected.  
+
+|                       |  baseline |  fitted |  R-squared |  
+|-----------------------|-----------|---------|------------|  
+|  entropy              |   1.1159  |  1.1080 |   0.0071   |  
+|  qualitative variance |   0.3094  |  0.3079 |   0.0048   |  
+|  classification error |   0.4782  |  0.4782 |  -0.0000   |  
+|  -2/N*log-likelihood  |   2.2319  |  2.2159 |   0.0071/0.0157|  
+|  likelihood^(-2/N)    |   9.3171  |  9.1698 |   0.0158/0.0177|  
+
+Table: \label{tab:pseudo}Pseudo R-squared measures  
+
+- Standardized residuals are used to evaluate the difference between the observed frequencies and the expected frequencies, it is expected residuals to be evenly across the table, largest residuals indicate where the model is least appropriate. $res.std=\frac{n_{ij}-\hat\mu_{ij}}{\sqrt{\hat\mu_{ij}(1-p_{i+})(1-p_{+j})}}$. From all 96 residuals which their absolute value is greater than 1 are shown in table \ref{tab:res}, where -1.63 and 2.49 are the extreme values. This residuals are not considered bad as the difference between the observed and estimated values in only one case is greater than $\pm1.96$.   
+
+
+|I S G U|observed|estimated|std. res.|  
+|-------|--------|---------|---------|  
+|3 4 1 2|2|5.972|-1.625|  
+|2 2 2 3|3|7.041|-1.523|  
+|1 2 2 1|19|25.268|-1.247|  
+|3 1 1 3|6|9.423|-1.115|  
+|2 3 1 2|6|9.278|-1.076|  
+|2 4 2 1|0|1.152|-1.073|  
+|3 2 1 4|0|1.007|-1.003|  
+|3 4 2 1|3|1.691|1.007|  
+|3 3 2 1|4|2.314|1.109|  
+|2 3 1 3|8|4.958|1.366|  
+|3 2 1 3|7|4.023|1.485|  
+|3 1 2 4|3|1.298|1.494|  
+|1 1 2 1|37|28.659|1.558|  
+|3 4 1 3|6|2.26|2.488|   
+ 
+Table: \label{tab:res}Highest Standardized residuals in absolute values  
+
+
+6. Your dependent variable has at least three categories (and you have used dummy coding for the dependent variable). Decide whether you will present the results and interpretation in terms of Baseline-Category Logits or Adjacent-Categories Logits. Explain your decision.
+
+The dependent variable, *Unfair treatment (U): Perception of student regarding immigrants are more exposed to unfair treatment than other groups*  has 4 response categories. This categories are *Strongly agree*, *Agree*, *Disagree*, *Strongly disagree*, usually called Likert scale. This scale is commonly used as nominal variable but there is an underline ordering in the categories, as the Strongly agree category corresponds to the highest presence of the studied attribute, and Strongly disagree to the lower presence of the attribute.   
+
+Considering the ordinal characteristic of the dependent variable, Adjacent-Categories Logits seem to be the best approach to interpret the results, in order to consider the entire scale. The adjacent-categories logits are calculated as $log(\frac{\pi_{j+1}}{\pi_j})=\beta_{0j}+\beta_{1j}G+\beta_{2j}I+\beta_{3j}S$ with $j=1,2,3$.  
+
+7. Present the Baseline-Category or Adjacent-Categories Logits and discuss the parameter estimates, also discuss the associated odds ratios. Note: interpret at least one interaction effect. You should present your results as if you are writing a basic scientific paper; the interpretation of your results should also include a discussion on how your results fit in with the hypotheses you formulated.
+
+```{r multin, results='hide'}
+# library(VGAM)
+# fit.adj <- vglm(ordered(ES3G06B) ~ (GENDER+IMMIG+NISB), family=acat(reverse=TRUE, parallel=TRUE), data=data4)
+# summary(fit.adj)
+# fitted(fit.adj)
+# exp(coef(fit.adj))
+# 
+# library(MASS)
+# polr1 <- polr(ES3G06B ~ (GENDER+IMMIG+NISB), data4 , Hess=TRUE)
+# summary(polr1)
+# exp(coef(polr1))
+# exp(polr1$zeta)
+# deviance(polr1)
+# logLik(polr1)
+# fitted(polr1)
+# loglin <- glm(Freq ~ (ES3G06B+GENDERIMMIG*NISB), data = tdata4, family = poisson) 
+# #summary(loglin)
+# coefll<- data.frame(cbind(coef = round(exp(loglin$coefficients),2), pval= round(summary(loglin)$coefficients[,4],4)))
+# coefll$Item <- c(rownames(coefll))
+# coefll<- coefll %>% 
+#   mutate(sig = ifelse(pval < 0.001, "***", ifelse(pval >= 0.001 & pval < 0.01, "**",ifelse(pval >= 0.01 & pval < 0.05, "*"," ")))) %>% 
+#   select(Item, coef, pval, sig)
+
+library(nnet)
+Multino <- multinom(ES3G06B ~ (GENDER+IMMIG+NISB), data=data4)
+MultinoCondi3way <- multinom(ES3G06B ~ (GENDER+IMMIG+NISB+GENDER*IMMIG), data=data4)
+#summary(Multino)
+#exp(coef(Multino))
+# deviance(Multino)
+# logLik(Multino)
+# fitted(Multino)
+
+z <- t(summary(Multino)$coefficients/summary(Multino)$standard.errors)
+colnames(z)<-paste0("z.",colnames(z))
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+colnames(p)<-paste0("p.",colnames(p))
+coef<-round(exp(data.frame(t(coef(Multino)))),2)
+colnames(coef)<-paste0("coef.",colnames(coef))
+
+coeff <- data.frame(round(cbind(coef,z,p),4))
+coeff$Item<- rownames(coeff)
+
+coeff<- coeff %>% mutate(sig.Agree = ifelse(p.z.Agree < 0.001, "***", ifelse(p.z.Agree >= 0.001 & p.z.Agree < 0.01, "**",ifelse(p.z.Agree >= 0.01 & p.z.Agree < 0.05, "*"," "))),
+                sig.Disagree = ifelse(p.z.Disagree < 0.001, "***", ifelse(p.z.Disagree >= 0.001 & p.z.Disagree < 0.01, "**",ifelse(p.z.Disagree >= 0.01 & p.z.Disagree < 0.05, "*"," "))),
+                sig.Strongly.disagree = ifelse(p.z.Strongly.disagree < 0.001, "***", ifelse(p.z.Strongly.disagree >= 0.001 & p.z.Strongly.disagree < 0.01, "**",ifelse(p.z.Strongly.disagree >= 0.01 & p.z.Strongly.disagree < 0.05, "*"," "))),
+                Item = gsub("([[:upper:]])([[:upper:]][[:lower:]])", "\\1 \\2", Item)) %>% 
+  dplyr::select(Item, coef.Agree, p.z.Agree, sig.Agree, coef.Disagree,p.z.Disagree, sig.Disagree, coef.Strongly.disagree, p.z.Strongly.disagree, sig.Strongly.disagree)
+
+adj<-coeff %>% mutate(ORInt_Agre_StgAgr = coef.Agree,
+                      ORInt_Disgr_Agree = round(coef.Disagree/coef.Agree,2),
+                      ORInt_StgDis_Disg = round(coef.Strongly.disagree/coef.Disagree,2))
+```
+
+
+```{r models}
+# kbl(coefll, col.names = c("Coefficients", "$\\tau$", "pval", ""), caption = "Log linear saturated model", 
+#     escape = FALSE, longtable = TRUE) %>%
+#   kable_styling(latex_options = c("HOLD_position"), full_width = FALSE) %>%
+#   column_spec(1, width = "10cm") %>%
+#   column_spec(c(4), width = "1cm") 
+
+kbl(coeff, col.names = c("Coefficients", "$\\pi_2$", "pval", "", "$\\pi_3$", "pval", "",
+                         "$\\pi_4$", "pval", ""),
+    caption = "Multinomial odds model", escape = FALSE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position"), full_width = FALSE) %>%
+  column_spec(1, width = "4cm") %>%
+  column_spec(c(2,3,5,6,8,9), width = "1cm") %>%
+  column_spec(c(4,7,10), width = "0.6cm") %>%
+  add_header_above(c(" " = 1, "Agree" = 3 , "Disagree" = 3, "Strongly disagree" = 3))
+
+
+kbl(adj[,c(1,11,12,13)], col.names = c("Coefficients", "$\\pi_{Agree}/\\pi_{Strongly Agree}$", "$\\pi_{Disagree}/\\pi_{Agree}$", "$\\pi_{Strongly disagree}/\\pi_{Disagree}$"), 
+    caption = "Adjacent-Categories logits multinomial model", escape = FALSE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position"), full_width = FALSE) %>% 
+  column_spec(1, width = "4cm") %>%
+  column_spec(c(2,3,4), width = "2cm")
+
+
+
+```
+
+The estimated odds of response “Agree” versus “Strongly Agree” to the scale "In my country, immigrants are more exposed to unfair treatment than other groups" are equal to 3.79. For girls, the estimated odds are 1.11 times those for boys, controlling for immigration status and socio-economical background. For students At least one parent born in the country, the estimated odds are 1.56/1.52 times those students born in the country but parents born abroad and those Students and parent(s) born abroad respectively controlling by gender and socio-economical background.  For students in the Level 2 or level 4 in the socio-economic index, the odds of response are 1.14-1.13 times those from level 1 and 1.38 times for students in level 3 compared to students in level 1 controlling by gender and immigration status.   
+
+
+The estimated odds of response "Disagree" versus "Agree" are equal to 0.53 (1.89 Agree versus Disagree). For Girls, the estimated odds of response are 1.25 times those for boys, controlling for immigration status and socio-economical level. For students At least one parent born in the country, the estimated odds are 1.14/1.27 times those students born in the country but parents born abroad and those Students and parent(s) born abroad respectively controlling by gender and socio-economical background. For students with socio-economical level 3 the odds of response "Disagree" versus "Agree" are 1.14 times those students with socio-economical level 1 and 1.09/1.12 times for students from level 1 compared to level 2 and 4 respectively, controlling by gender and immigration status.
+
+In the case of the odd of response "Strongly disagree" versus "Disagree" are equal to 0.14 (7.14 Disagree versus Strongly disagree). In this case 1.32 times higher for boys than girls. For students born in the country but parents born abroad is 1.3 times than for students with At least one parent born in the country, there is no difference in the odds for students that they and their parents born abroad compared to students with at least one parent born in the country, controlling by gender and socio-economical background. Student's in level 2 and in level 4 in the socio-economical index are 1.77/2.03 times respectively more likely to choose the response option Strongly disagree than Disagree compared to students from level 1. Students from level 3 are just 1.07 time more likely, controlling by gender and immigration status.
+
+In summary, it is more likely a student will choose the response option "Agree" or "Disagree" than the options "Strongly agree" or "Strongly disagree" respectively.  Girls are more likely to disagree with this scale and boys are more likely to agree. Students with At least one parent born in the country (ref) are more likely to disagree to this scale and on the contrary, students that parents or themselves born abroad are likely to agree. Finally, students from higher socio-economical background are more likely to either Agree or Strongly disagree than Strongly agree compared to those at the lowest level.  
+
+
+  
+```{r intera}
+
+way3 <- data.frame(exp(coef(MultinoCondi3way))) 
+way3$categ <-rownames(coef(MultinoCondi3way))
+
+way3 <- way3 %>% reshape2::melt(id = "categ") %>% reshape2::dcast(variable ~ categ) %>% filter(!variable %in% c("X.Intercept.", "NISBLevel.2", "NISBLevel.3", "NISBLevel.4..highest.")) 
+
+waytableAgree <- data.frame(Immi = c(rep("At least one parent born in country",3), 
+                                     rep("Students born in country but parent(s) born abroad",3), 
+                                     rep("Students and parent(s) born abroad",3)),
+                       Boy = c(1,1,1,way3$Agree[way3$variable=="IMMIGStudents.born.in.country.but.parent.s..born.abroad"],1,1,
+                               way3$Agree[way3$variable=="IMMIGStudents.and.parent.s..born.abroad"],1,1),
+                       Girl = c(1,way3$Agree[way3$variable=="GENDERGirl"],1,
+                                way3$Agree[way3$variable=="IMMIGStudents.born.in.country.but.parent.s..born.abroad"],
+                                way3$Agree[way3$variable=="GENDERGirl"],
+                                way3$Agree[way3$variable=="GENDERGirl.IMMIGStudents.born.in.country.but.parent.s..born.abroad"],
+                                way3$Agree[way3$variable=="IMMIGStudents.and.parent.s..born.abroad"],
+                                way3$Agree[way3$variable=="GENDERGirl"],
+                                way3$Agree[way3$variable=="GENDERGirl.IMMIGStudents.and.parent.s..born.abroad"])) %>% 
+  group_by(Immi) %>% 
+  mutate(pod.Boy=cumprod(Boy),
+         pod.Girl=cumprod(Girl)) %>% 
+  mutate(pod.Boy=ifelse(row_number()!=n(), pod.Boy[n()], pod.Boy),
+         pod.Girl=ifelse(row_number()!=n(), pod.Girl[n()], pod.Girl))
+                                                                                                                            
+kbl(waytableAgree, digits = 3, col.names = c("Immigration status", "Boy", "Girl", "Boy", "Girl"), label = "agree",
+    caption = "Three-way interaction odds Response category Agree/Strongly disagree", escape = FALSE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position"), full_width = FALSE) %>%
+  column_spec(1, width = "4cm") %>%
+  column_spec(2:5, width = "2cm") %>%
+  add_header_above(c(" " = 1, "Main and interaction \nodds ratios" = 2 , "Odds ratios with respect \nto ref category" = 2)) %>% 
+  collapse_rows(c(1,4,5))
+
+
+waytabledisagree <- data.frame(Immi = c(rep("At least one parent born in country",3), 
+                                     rep("Students born in country but parent(s) born abroad",3), 
+                                     rep("Students and parent(s) born abroad",3)),
+                       Boy = c(1,1,1,way3$Disagree[way3$variable=="IMMIGStudents.born.in.country.but.parent.s..born.abroad"],1,1,
+                               way3$Disagree[way3$variable=="IMMIGStudents.and.parent.s..born.abroad"],1,1),
+                       Girl = c(1,way3$Disagree[way3$variable=="GENDERGirl"],1,
+                                way3$Disagree[way3$variable=="IMMIGStudents.born.in.country.but.parent.s..born.abroad"],
+                                way3$Disagree[way3$variable=="GENDERGirl"],
+                                way3$Disagree[way3$variable=="GENDERGirl.IMMIGStudents.born.in.country.but.parent.s..born.abroad"],
+                                way3$Disagree[way3$variable=="IMMIGStudents.and.parent.s..born.abroad"],
+                                way3$Disagree[way3$variable=="GENDERGirl"],
+                                way3$Disagree[way3$variable=="GENDERGirl.IMMIGStudents.and.parent.s..born.abroad"])) %>% 
+  group_by(Immi) %>% 
+  mutate(pod.Boy=cumprod(Boy),
+         pod.Girl=cumprod(Girl)) %>% 
+  mutate(pod.Boy=ifelse(row_number()!=n(), pod.Boy[n()], pod.Boy),
+         pod.Girl=ifelse(row_number()!=n(), pod.Girl[n()], pod.Girl))
+                                                                                                                            
+kbl(waytabledisagree, digits = 3, col.names = c("Immigration status", "Boy", "Girl", "Boy", "Girl"), label = "disagree",
+    caption = "Three-way interaction odds Response category Disagree/Agree", escape = FALSE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position"), full_width = FALSE) %>%
+  column_spec(1, width = "4cm") %>%
+  column_spec(2:5, width = "2cm") %>%
+  add_header_above(c(" " = 1, "Main and interaction \nodds ratios" = 2 , "Odds ratios with respect \nto ref category" = 2)) %>% 
+  collapse_rows(c(1,4,5))
+
+
+
+waytablestrsagree <- data.frame(Immi = c(rep("At least one parent born in country",3), 
+                                     rep("Students born in country but parent(s) born abroad",3), 
+                                     rep("Students and parent(s) born abroad",3)),
+                       Boy = c(1,1,1,way3$`Strongly disagree`[way3$variable=="IMMIGStudents.born.in.country.but.parent.s..born.abroad"],1,1,
+                               way3$`Strongly disagree`[way3$variable=="IMMIGStudents.and.parent.s..born.abroad"],1,1),
+                       Girl = c(1,way3$`Strongly disagree`[way3$variable=="GENDERGirl"],1,
+                                way3$`Strongly disagree`[way3$variable=="IMMIGStudents.born.in.country.but.parent.s..born.abroad"],
+                                way3$`Strongly disagree`[way3$variable=="GENDERGirl"],
+                                way3$`Strongly disagree`[way3$variable=="GENDERGirl.IMMIGStudents.born.in.country.but.parent.s..born.abroad"],
+                                way3$`Strongly disagree`[way3$variable=="IMMIGStudents.and.parent.s..born.abroad"],
+                                way3$`Strongly disagree`[way3$variable=="GENDERGirl"],
+                                way3$`Strongly disagree`[way3$variable=="GENDERGirl.IMMIGStudents.and.parent.s..born.abroad"])) %>% 
+  group_by(Immi) %>% 
+  mutate(pod.Boy=cumprod(Boy),
+         pod.Girl=cumprod(Girl)) %>% 
+  mutate(pod.Boy=ifelse(row_number()!=n(), pod.Boy[n()], pod.Boy),
+         pod.Girl=ifelse(row_number()!=n(), pod.Girl[n()], pod.Girl))
+                                                                                                                            
+kbl(waytablestrsagree, digits = 3, col.names = c("Immigration status", "Boy", "Girl", "Boy", "Girl"), label = "stragree",
+    caption = "Three-way interaction odds Response category Strongly Disagree/Disagree", escape = FALSE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position"), full_width = FALSE) %>%
+  column_spec(1, width = "4cm") %>%
+  column_spec(2:5, width = "2cm") %>%
+  add_header_above(c(" " = 1, "Main and interaction \nodds ratios" = 2 , "Odds ratios with respect \nto ref category" = 2)) %>% 
+  collapse_rows(c(1,4,5))
+
+```
+
+If the interaction effect was incorporated in the model, even though the interaction is not significantly different from zero, still interpretation is possible. In tables \ref{tab:agree}, \ref{tab:disagree} and \ref{tab:stragree} the odds ratios with respect to the reference categories are shown. In the first table, it is possible to indicate that the odds to agree (versus strongly agree) with immigrants are more exposed to unfair treatment for a male student born in country but parents born abroad is about half those male students born in the country. In the second table is shown that the odds to disagree (versus agree) for a female student with at least one parent born in country is 1.41 times male students with at least one parent born in country.  In third table, the odds of Strongly disagree (versus disagree) for a male student that he/she and their parents born abroad is more than half those male students that at least one parent born in country.  
+
+\newpage  
+# Exercise 3  
+
+1. Create a 4 or 5-dimensional table in which each variable is theoretically a measure of the same underlying latent concept. Each variable is allowed to be dichotomous.
+
+Table indicate the 5 items that will be used, this items underlying one latent concept called *Attitudes towards immigrants*.    
+- Immigrants should have the opportunity to continue speaking their own language (L)    
+- Immigrant children should have the same opportunities for education (E)    
+- Immigrants who live in a country for several years should have the opportunity to vote (V)   
+- Immigrants should have the opportunity to continue their own customs and lifestyle (C)    
+- Immigrants should have the same rights that everyone else in the country has (R)    
+
+```{r }
+#str(data5)
+
+data5$L <- factor(ifelse(data5$ES3G04A %in% c(1,2), 1, ifelse(data5$ES3G04A %in% c(3,4), 2, NA)), labels = c("Agree", "Disagree"))
+data5$E <- factor(ifelse(data5$ES3G04B %in% c(1,2), 1, ifelse(data5$ES3G04B %in% c(3,4), 2, NA)), labels = c("Agree", "Disagree"))
+data5$V <- factor(ifelse(data5$ES3G04C %in% c(1,2), 1, ifelse(data5$ES3G04C %in% c(3,4), 2, NA)), labels = c("Agree", "Disagree"))
+data5$C <- factor(ifelse(data5$ES3G04D %in% c(1,2), 1, ifelse(data5$ES3G04D %in% c(3,4), 2, NA)), labels = c("Agree", "Disagree"))
+data5$R <- factor(ifelse(data5$ES3G04E %in% c(1,2), 1, ifelse(data5$ES3G04E %in% c(3,4), 2, NA)), labels = c("Agree", "Disagree"))
+
+items <- c("Customs and lifestyle (C)", "Opportunities for education (E)", "Speak their own language (L)", "Same rights (R)", "Opportunity to vote (V)")
+
+
+tdata5 <- vcd::structable(data = data5, L ~  E + V + C + R)
+tdata5 <- reshape2::dcast(as.data.frame(tdata5),  E + V + C + R ~ L ) 
+kbl(tdata5,
+    col.names = c("Opportunities for education (E)", "Opportunity to vote (V)", "Customs and lifestyle (C)", "Same rights (R)",  "Agree", "Disagree"), 
+    caption = "Contingency table - Belgium(Flanders)") %>%
+  footnote(general_title = "Source: International Civic and Citizenship Education Study (ICCS) 2016") %>% 
+  kable_classic_2(full_width = F) %>% 
+  kable_styling(latex_options = c("HOLD_position")) %>%
+  column_spec(1:4, width = "2.5cm") %>%
+  column_spec(5:6, width = "2cm") %>%
+  add_header_above(c(" " = 4, "Speak their own \nlanguage (L)" = 2)) %>% 
+  collapse_rows(columns = 1:4, valign = "top")
+
+# tdata5n <- vcd::structable(data = lapply(data5, as.numeric), L ~  E + V + C + R)
+# write.table(as.data.frame(tdata5n), "LEMex3.txt", quote = FALSE, row.names = FALSE)
+
+```
+
+2. Test whether the items actually measure one latent variable by performing an exploratory latent class analysis, paying attention to the number of latent classes. Discuss each step in terms of model fit and draw your conclusion about the final model.
+
+In table \ref{tab:lca1} summarizes the exploratory latent class analysis, non-independence model (null model/1 class) is not enough to explain the amount of association in the data, therefore more than 1 class is needed. Second model, with 2 classes reduces the L2 in 86% but still not acceptable with 20 degrees of freedom. If another class is added to the model, an 81% is reduced and 97% compared to the baseline model, but this model it does not have an adequate fit accordingly to $L2$ test. Finally, if a 4th class is added the model, this does is not identified, 2 boundary estimates are found, i.e., the model do not reach a global maxima as the results are different by using different starting values. For this, one of the solutions is to add a restriction and check for stability of the results by changing the starting values. 
+
+
+```{r lca1}
+set.seed(5771)
+library(poLCA)
+lca1 <- poLCA(cbind(L,E, V, C, R) ~ 1, nclass = 1, data = data5, nrep = 6, verbose = FALSE)
+lca2 <- poLCA(cbind(L,E, V, C, R) ~ 1, nclass = 2, data = data5, nrep = 6, verbose = FALSE)
+lca3 <- poLCA(cbind(L,E, V, C, R) ~ 1, nclass = 3, data = data5, nrep = 6, verbose = FALSE)
+lca4 <- poLCA(cbind(L,E, V, C, R) ~ 1, nclass = 4, data = data5, nrep = 6, verbose = FALSE, maxiter = 5000)
+
+class <- c(1:4,"$4^{a}$")
+Gsq <- as.numeric(c(lca1$Gsq,lca2$Gsq,lca3$Gsq,lca4$Gsq, 13.1435))
+df <- c(lca1$resid.df,lca2$resid.df,lca3$resid.df,lca4$resid.df, 9)
+chi <- c(lca1$Chisq,lca2$Chisq,lca3$Chisq,lca4$Chisq, 14.8099)
+aic <- c(lca1$aic,lca2$aic,lca3$aic,lca4$aic, 12798.9048)
+bic <- c(lca1$bic,lca2$bic,lca3$bic,lca4$bic, 12667.8931)
+
+# library(plyr)
+# entropy <- function(p) sum(-p * log(p))
+# 
+# ClassErr <- NA
+# entr <- NA
+# posteriors <- data.frame(lca2$posterior, predclass=lca2$predclass)
+# classification_table <-  as.matrix(ddply(posteriors, .(predclass), function(x) colSums(x[,1:2])) )
+# ClassErr[2] <- round(1-sum(diag(classification_table[,c(2:(2+1))])) / sum(classification_table[,c(2:(2+1))]),3)
+# error_prior <- entropy(lca2$P) # Class proportions
+# error_post <- mean(apply(lca2$posterior, 1, entropy), na.rm = TRUE)
+# entr[2] <- round((error_prior - error_post) / error_prior,3)
+# 
+# posteriors <- data.frame(lca3$posterior, predclass=lca3$predclass)
+# classification_table <-  as.matrix(ddply(posteriors, .(predclass), function(x) colSums(x[,1:3])) )
+# ClassErr[3] <- round(1-sum(diag(classification_table[,c(2:(3+1))])) / sum(classification_table[,c(2:(3+1))]),3)
+# error_prior <- entropy(lca3$P) # Class proportions
+# error_post <- mean(apply(lca3$posterior, 1, entropy), na.rm = TRUE)
+# entr[3] <- round((error_prior - error_post) / error_prior,3)
+# 
+# posteriors <- data.frame(lca4$posterior, predclass=lca4$predclass)
+# classification_table <-  as.matrix(ddply(posteriors, .(predclass), function(x) colSums(x[,1:4])) )
+# ClassErr[4] <- round(1-sum(diag(classification_table[,c(2:(4+1))])) / sum(classification_table[,c(2:(4+1))]),3)
+# error_prior <- entropy(lca4$P) # Class proportions
+# error_post <- mean(apply(lca4$posterior, 1, entropy), na.rm = TRUE)
+# entr[4] <- round((error_prior - error_post) / error_prior,3)
+#            
+
+summary <- cbind(class, Gsq,df,chi, aic, bic) %>% data.frame() 
+summary[-1] <- sapply(summary[-1],as.numeric)
+summary<-summary %>% 
+  mutate(dlta = Gsq - lag(Gsq),
+         pvalue = 1-pchisq(Gsq,df)) %>% dplyr::select(class,chi,Gsq, df,pvalue,dlta,aic, bic)
+kbl(summary, digits = c(0,1,1,0,3,0,1,1), caption = "Model fit for different number of classes", 
+    col.names = c("Classes", "$\\chi^2$", "$L^2$","df", "p-value","$\\Delta L^2$", "AIC", "BIC"), escape = FALSE) %>% 
+  kable_classic_2(full_width = T) %>% 
+  kable_styling(latex_options = c("HOLD_position")) %>% 
+  row_spec(5, bold = TRUE) %>% footnote("a: Exact indicator imposed")
+
+```
+
+
+3. Discuss the results of your final latent class model in terms of the size and characteristics of the latent classes identified in your analysis.
+
+
+In the four class model, 2 boundary estimates were found concerning variables "Same rights (R)" and "Customs and lifestyle (C)". In order to obtain a reliable model with 4 classes, probability of variable R was fixed to 1, as the estimated value is close to this value even in previous models.  
+Using this fixation it is possible to obtain a goodness of fit acceptable, is worth to mention that stability of the model is maintained after changing the starting values, probabilities and class size estimations only varies at the 3rd decimal.  
+
+In table \ref{tab:cond1} it possible to see that the size classes for three classes are 60% for High Engagement students, 31% for the Medium Engagement students and 9% for No Engagement students.  In table \ref{tab:cond2} the additional class estimated reduce the first class of High Engagement students to 54%, but maintain Medium Engagement students class in 31%. The No Engagement class is reduced to 8% and the Basic Engagement students class appears with sample size of 7%. A degree of freedom is gain by the constrain.   
+
+In summary, students can be classified correctly in 3 groups but more specific into 4 and with a goodness of fit adequate, where the group of Basic Engagement differentiate the students that consider that immigrants can continue with their customs and lifestyle and receive the same opportunities for education, but they are less likely to agree with their opportunity to keep speaking their language, to have the same rights and to vote. A clear description can be visualized in figure \ref{fig:cond1}.     
+
+```{r cond1}
+# 3 classes
+probs.start.new <- poLCA.reorder(lca3$probs.start,order(lca3$P,decreasing=TRUE))
+lc3.ch <- poLCA(cbind(L,E, V, C, R) ~ 1, nclass = 3, data = data5, verbose = FALSE, probs.start=probs.start.new)
+
+cmodel <- reshape2::melt(lc3.ch$probs, level=2) %>%
+  rename_with(~ c("param", "category", "Class")[which(c("L2", "Var2", "Var1") == .x)], .cols = c("L2", "Var2", "Var1")) %>%
+  mutate_at( c("param", "category", "Class"), ~ as.factor(.x))
+cmodel$value <- as.numeric(cmodel$value)
+sizes<-lc3.ch$P
+
+cmodel$paramf <- factor(cmodel$param, levels = levels(cmodel$param), labels = items)
+cmodel$categoryf <- factor(cmodel$category, levels = levels(cmodel$category), labels = c("Agree", "Disagree"))
+cmodel$Class <- factor(cmodel$Class, levels = levels(cmodel$Class), labels = c("High Engagement",  "Medium Engagement", "No Engagement"))
+
+tbl<-  rbind(reshape2::dcast(cmodel[,c(5,6,1,3)], paramf + categoryf ~ Class ),
+        cbind(paramf= "Latent Class Size", categoryf="",  
+              `High Engagement`= sizes[1], 
+              `Medium Engagement`=sizes[2], 
+              `No Engagement`= sizes[3]))
+tbl[c(3,4,5)] <- sapply(tbl[c(3,4,5)],as.numeric)
+tbl[c(3,4,5)] <- round(tbl[c(3,4,5)],3)
+tbl <- tbl %>% mutate(`High Engagement` = cell_spec(`High Engagement`, color =
+                                                     ifelse(`High Engagement`>.6, "cyan", "black"), bold =
+                                                       ifelse(`High Engagement`>.55, TRUE, FALSE)),
+               `Medium Engagement` = cell_spec(`Medium Engagement`, color =
+                                                     ifelse(`Medium Engagement`>.5, "blue", "black"), bold =
+                                                       ifelse(`Medium Engagement`>.5, TRUE, FALSE)),
+               `No Engagement` = cell_spec(`No Engagement`, color =
+                                                     ifelse(`No Engagement`>.55, "red", "black"), bold =
+                                                       ifelse(`No Engagement`>.5, TRUE, FALSE)))
+  kbl(tbl, digits = 3, align = c("llrrr"),
+    col.names = c("Items", "Responses", "High Engagement",  "Medium Engagement", "No Engagement"), 
+    caption = "Conditional probabilities (three latent classes)", escape = FALSE) %>%
+  footnote(general_title = 
+  paste("$L^2$ = ",round(lc3.ch$Gsq,3),", df = ",lc3.ch$resid.df+1,",p = ",round(1-pchisq(lc3.ch$Gsq,lc3.ch$resid.df+1),3)), 
+  paste("$\\chi^2$ = ",round(lc3.ch$Chisq,3)), escape = FALSE) %>% 
+  kable_classic_2(full_width = F) %>% 
+  kable_styling(latex_options = c("HOLD_position")) %>%
+  column_spec(1, width = "3.5cm") %>%
+  column_spec(2, width = "2cm") %>%
+  column_spec(3:5, width = "2.5cm") %>%
+  row_spec(11, bold = TRUE) %>%
+  collapse_rows(columns = 1, valign = "top") 
+```
+
+```{r cond2, fig.height=5, fig.cap= "Highest conditional probabilities by classes"}
+
+#four classes with restrictions  
+Class<-c("class 1:", "class 2:", "class 3:", "class 4:")
+category <- c(rep("Pr(1)",4), rep("Pr(2)",4))
+value <- c( 0.9549,  0.9729,  0.9832, 0.5568,  
+             0.0451,  0.0271,  0.0168,  0.4432,
+             0.5413,  0.6516,  0.9352,  0.2038,
+             0.4587,  0.3484,  0.0648,  0.7962,
+            0.9954,  0.2346,  0.9176,  0.1252,
+             0.0046,  0.7654,  0.0824,  0.8748,
+             0.6309,  0.9051,  1.0000,  0.2224,
+            0.3691,  0.0949,  0.0000,  0.7776,
+             0.6628,  0.2037,  0.8160,  0.1817,
+            0.3372,  0.7963,  0.1840,  0.8183)
+param <- c(rep("E",8), rep("V",8), rep("C",8), rep("R",8), rep("L",8))
+
+cmodel <- data.frame(Class = as.factor(Class),category = as.factor(category),value,param= as.factor(param))
+
+
+cmodel$paramf <- factor(cmodel$param, levels = levels(cmodel$param), labels = items)
+cmodel$categoryf <- factor(cmodel$category, levels = levels(cmodel$category), labels = c("Agree", "Disagree"))
+cmodel$Class <- factor(cmodel$Class, levels = c("class 3:","class 1:","class 2:","class 4:"), labels = c("High Engagement", "Basic Engagement",  "Medium Engagement", "No Engagement"))
+
+ggplot(cmodel,aes(x = paramf, y = value, fill = categoryf)) + 
+    geom_bar(stat = "identity", position = "stack") + 
+    facet_grid(Class ~ ., labeller = label_wrap_gen(6)) + 
+    scale_fill_brewer(type="seq", palette="Greys") +
+    theme_bw() + 
+    ggtitle("Attitudes towards immigration") +
+    labs(x = "Items", y = "Response probabilities", fill ="Response category") + 
+    theme(legend.position = "top", title = element_text(size=9),
+          strip.text.y = element_text(size = 8), 
+          axis.text.x=element_text(vjust = 0.5, hjust = 0.5, size = 9),
+          axis.text.y=element_text(size = 7),
+          axis.title = element_text(size = 7),
+          axis.ticks.y=element_blank(),                    
+          panel.grid.major.y=element_blank(), legend.title = element_text(size = 8), 
+          legend.key.size = unit(0.3, "cm"),
+          legend.text = element_text(size = 8)) +
+    scale_x_discrete(label = function(x) str_wrap(x,15)) +
+    guides(fill=guide_legend(nrow=1,byrow=TRUE)) +
+    scale_y_continuous(breaks = c(0.25,0.5,0.75)) +
+    geom_hline(yintercept=c(0.25,0.5,0.75), linetype = "dashed", size = 0.3, color = "gray")
+
+sizes<-c(0.0733,  0.3074,  0.5417, 0.0775)[c(3,1,2,4)]
+
+tbl<-  rbind(reshape2::dcast(cmodel[,c(5,6,1,3)], paramf + categoryf ~ Class ),
+        cbind(paramf= "Latent Class Size", categoryf="",  
+              `High Engagement`= sizes[1], 
+              `Basic Engagement`= sizes[2],
+              `Medium Engagement`=sizes[3], 
+              `No Engagement`= sizes[4]))
+tbl[c(3,4,5,6)] <- sapply(tbl[c(3,4,5,6)],as.numeric)
+tbl[c(3,4,5,6)] <- round(tbl[c(3,4,5,6)],4)
+tbl <- tbl %>% mutate(
+    `High Engagement` = ifelse(paramf == "Same rights (R)" & categoryf %in% "Agree", 
+                                     paste0(`High Engagement`,".000$^{a}$"), 
+                                     ifelse(paramf == "Same rights (R)" & categoryf %in% "Disagree", 
+                                     paste0(`High Engagement`,".000"), `High Engagement`)),
+  `High Engagement` = cell_spec(`High Engagement`, color = ifelse(categoryf %in% "Agree", "cyan", "black"),
+                                       bold = ifelse(`High Engagement`>.55, TRUE, FALSE)),
+  `Basic Engagement` = cell_spec(`Basic Engagement`, color = ifelse(`Basic Engagement`>.5, "magenta", "black"),
+                                      bold = ifelse(`Basic Engagement`>.5, TRUE, FALSE)),
+  `Medium Engagement` = cell_spec(`Medium Engagement`, color = ifelse(`Medium Engagement`>.5, "blue", "black"),
+                                       bold = ifelse(`Medium Engagement`>.5, TRUE, FALSE)),
+  `No Engagement` = cell_spec(`No Engagement`, color = ifelse(`No Engagement`>.55, "red", "black"),
+                                    bold = ifelse(`No Engagement`>.5, TRUE, FALSE))
+  )
+
+  kbl(tbl, align = "llrrrr",
+    col.names = c("Items", "Responses", "High Engagement", "Basic Engagement", "Medium Engagement", 
+                  "No Engagement"), 
+    caption = "Conditional probabilities (four latent classes) with exact restriction", escape = FALSE) %>%
+  footnote(general_title = 
+  paste("$L^2$ = 13.1435, df = 9, p = ",round(1-pchisq(13.1435,9),3)), 
+  paste("$\\chi^2$ = 14.8099"), alphabet = c("Exact indicator imposed") , escape = FALSE) %>% 
+  kable_classic_2(full_width = F) %>% 
+  kable_styling(latex_options = c("HOLD_position")) %>%
+  column_spec(1, width = "3.5cm") %>%
+  column_spec(2, width = "2cm") %>%
+  column_spec(3:6, width = "2.5cm") %>%
+  collapse_rows(columns = 1, valign = "top") %>%
+  row_spec(11, bold = TRUE)
+
+```
+
+4. Formulate at least two hypotheses for a confirmatory latent class analysis. Impose the restrictions for your hypothesis on the model, and draw conclusions.
+
+One of the hypothesis that is clear to see is that **High Engagement (Class 1)** student's probabilities are the same as for students with **Basic engagement (Class 2)** for variables *"Customs and lifestyle (C)"* and *"Opportunities for education (E)"*. 
+
+The second hypothesis to be tested is establishing that students with **Medium engagement (class 3)** and students that are **No Engagement (class 4)** have the same probability to disagree with the item *"Speak their own language (L)"*. 
+
+These restrictions are imposed by adding the following code: 
+
+`r paste0("X
+E|X eq2 
+V|X
+C|X eq2
+R|X eq2
+L|X eq2
+ des [1 0 0 0 0 0 1 0\n
+      2 5 0 0 0 0 2 5\n
+      0 0 0 0 0 0 -1 0\n
+      0 0 4 3 4 3 0 0 ]
+ sta R|X [.5 .5 .9 .1 .2 .8 1 0]")` 
+     
+With this restriction the model improves its fit, L2 increase to 14.18 with 3 more degrees of freedom (12). Sample sizes are adjusted to 54%, 29%, 8% and 9% respectively as indicated in table \ref{tab:conf1}.  
+
+In conclusion, the latent class analysis performed gives 4 latent classes, the first class, called "High Engagement" is composed by students who are likely to agree with all items analysed regarding their attitudes towards immigrants, they agree to that they should maintain their customs and lifestyle, Have equal opportunities for education, that they should speak their own language, Have the same rights and Opportunity to vote.  There is a second class which is differentiate from this one is that students even thought they are highly likely to agree with items like immigrants should maintain their customs and lifestyle and they should have opportunities for education, they are not equally likely to agree to items regarding speak their own language, have the same rights and the opportunity to vote, this class was call as Basic engagement.  
+In the third class, called Moderate engagement, students are more likely to agree with that immigrant should have opportunity to education and same rights as any other citizen and at some level with their opportunity to vote but they are highly likely to disagree with immigrants speaking their own language and maintaining their customs and lifestyle. In last class, called No Engagement, students are highly likely to disagree with all items but tend to agree with at least opportunity for education.   
+
+
+```{r conf1}
+
+#four classes with restrictions  
+Class<-c("class 1:", "class 2:", "class 3:", "class 4:")
+category <- c(rep("Pr(1)",4), rep("Pr(2)",4))
+value <- c( 
+0.9809,  0.9743,  0.5546,  0.9809,
+0.0191,  0.0257,  0.4454,  0.0191,
+0.5528,  0.6506,  0.2108,  0.9393,
+0.4472,  0.3494,  0.7892,  0.0607,
+0.9126,  0.2289,  0.1476,  0.9126,
+0.0874,  0.7711,  0.8524,  0.0874,
+0.6796,  0.9093,  0.2298,  1.0000,
+0.3204,  0.0907,  0.7702,  0.0000,
+0.6752,  0.1825,  0.1825,  0.8149,
+0.3248,  0.8175,  0.8175,  0.1851)
+param <- c(rep("E",8), rep("V",8), rep("C",8), rep("R",8), rep("L",8))
+
+cmodel <- data.frame(Class = as.factor(Class),category = as.factor(category),value,param= as.factor(param))
+cmodel$paramf <- factor(cmodel$param, levels = levels(cmodel$param), labels = items)
+cmodel$categoryf <- factor(cmodel$category, levels = levels(cmodel$category), labels = c("Agree", "Disagree"))
+cmodel$Class <- factor(cmodel$Class, levels = c("class 4:","class 1:","class 2:","class 3:"), labels = c("High Engagement", "Basic Engagement",  "Medium Engagement", "No Engagement"))
+
+sizes<-c(0.0889, 0.2919, 0.0799, 0.5393)[c(4,1,2,3)]
+
+tbl<-  rbind(reshape2::dcast(cmodel[,c(5,6,1,3)], paramf + categoryf ~ Class ),
+        cbind(paramf= "Latent Class Size", categoryf="",  
+              `High Engagement`= sizes[1], 
+              `Basic Engagement`= sizes[2],
+              `Medium Engagement`=sizes[3], 
+              `No Engagement`= sizes[4]))
+tbl <- tbl %>% mutate(
+  `High Engagement` = ifelse(paramf == "Same rights (R)" & categoryf %in% "Agree", 
+                                     paste0(`High Engagement`,".0000$^{a}$"), 
+                                     ifelse(paramf == "Same rights (R)" & categoryf %in% "Disagree", 
+                                     paste0(`High Engagement`,".0000"), `High Engagement`)),
+  `High Engagement` = ifelse(paramf == "Customs and lifestyle (C)" & categoryf %in% "Agree", 
+                                     paste0(`High Engagement`,"$^{b}$"), `High Engagement`),
+  `High Engagement` = ifelse(paramf == "Opportunities for education (E)" & categoryf %in% "Agree", 
+                                     paste0(`High Engagement`,"$^{b}$"), `High Engagement`),
+  `High Engagement` = cell_spec(`High Engagement`, color = ifelse(categoryf %in% "Agree" , "cyan", "black"), 
+                                        bold = ifelse(categoryf %in% "Agree" , TRUE, FALSE)),
+  `Basic Engagement` = ifelse(paramf == "Opportunities for education (E)" & categoryf %in% "Agree", 
+                                    paste0(`Basic Engagement`,"$^{b}$"), `Basic Engagement`),
+  `Basic Engagement` = ifelse(paramf == "Customs and lifestyle (C)" & categoryf %in% "Agree", 
+                                    paste0(`Basic Engagement`,"$^{b}$"), `Basic Engagement`),
+  `Basic Engagement` = cell_spec(`Basic Engagement`, color = ifelse(categoryf %in% "Agree", "magenta", "black"), 
+                                       bold = ifelse(categoryf %in% "Agree", TRUE, FALSE)),
+  `Medium Engagement` = ifelse(paramf == "Speak their own language (L)" & categoryf %in% "Disagree", 
+                                     paste0(`Medium Engagement`,"$^{b}$"), `Medium Engagement`),
+  `Medium Engagement` = cell_spec(`Medium Engagement`, color = ifelse(`Medium Engagement`>.5 |                                                               (paramf=="Speak their own language (L)" &	categoryf=="Disagree"), "blue", "black"), 
+                                        bold = ifelse(`Medium Engagement`>.5, TRUE, FALSE)),
+  `No Engagement` = ifelse(paramf == "Speak their own language (L)" & categoryf %in% "Disagree", 
+                                  paste0(`No Engagement`,"$^{b}$"), `No Engagement`),
+  `No Engagement` = cell_spec(`No Engagement`, color = ifelse(`No Engagement`>.55 |                                                               (paramf=="Speak their own language (L)" &	categoryf=="Disagree"), "red", "black"), 
+                                     bold = ifelse(`No Engagement`>.5, TRUE, FALSE)))
+
+  kbl(tbl, digits = 3,align = "llrrrr",
+    col.names = c("Items", "Responses", "High Engagement", "Basic Engagement", 
+                  "Medium Engagement", "No Engagement"),
+    caption = "Conditional probabilities (four latent classes) with equality restrictions", escape = FALSE) %>%
+  footnote(general_title = 
+  paste("$L^2$ = 14.1792, df = 12,p = ",round(1-pchisq(14.1792,12),3)),  
+  paste("$\\chi^2$ = 15.6664"), alphabet = c("Exact indicator imposed", "Equality restriction imposed"), escape = FALSE) %>% 
+  kable_classic_2(full_width = F) %>% 
+  kable_styling(latex_options = c("HOLD_position")) %>%
+  column_spec(1, width = "3.5cm") %>%
+  column_spec(2, width = "2cm") %>%
+  column_spec(3:6, width = "2.5cm") %>%
+  collapse_rows(columns = 1, valign = "top") %>%
+  row_spec(11, bold = TRUE)
+
+```
