@@ -1,0 +1,422 @@
+---
+title: "Meta Analysis"
+author: "Pamela Inostroza"
+date: "28/05/2020"
+output: 
+  html_document:
+    toc: TRUE
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+
+# if (!require("devtools")) {
+#   install.packages("devtools")
+# }
+# devtools::install_github("MathiasHarrer/dmetar")
+
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 10000)
+
+library(dplyr)
+library(meta)
+library(metafor)
+library(rgl)
+library(netmeta)
+library(dmetar)
+
+
+se.from.p(effect.size = -4.2, 
+          p = 0.02, 
+          N = 11,
+          effect.size.type= "difference")
+
+dire <- "G:/My Drive/Master in Statistics/Meta analysis/Paper assignment Meta Analysis/code and drafts and tables/"
+# 1. Read in the data
+data <- read.csv(paste0(dire,"data.csv"), as.is=TRUE,header = TRUE)
+data$dose <- paste(data$Doses.mg,"mg")
+data$dosec <- ifelse(data$Doses.mg < 0.5, "Dose < 0.5 mg",ifelse(data$Doses.mg > 0.5, "Dose > 0.5 mg", "Dose = 0.5 mg"))
+
+
+```
+
+Data containig the following information:  
+
+- the title,
+- the author,
+- the year of publication,
+- Ne, the Number of patients (sample size) in the experimental treatment group,
+- Me, the Mean response among the patients in the experimental group,
+- SDe, the Standard deviation of the response in the experimental group, and
+- Nc, Mc and SDc the sample size, mean response and standard deviation in the control patients.
+
+Analysis was done following https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/
+
+# Meta Analysis for all studies
+
+```{r model1,results= 'markup'}
+
+# #1. Calculate mean difference, variance and weights
+# MD <- with(data, Me - Mc)
+# varMD <- with(data, SDe^2/Ne + SDc^2/Nc)
+# weight <- 1/varMD
+# # 2. Calculate the inverse variance estimator
+# round(weighted.mean(MD, weight), 4)
+# 
+# # 3. Calculate the variance
+# round(1/sum(weight), 4)
+# round(c(mc1$TE.fixed, mc1$seTE.fixed^2), 4)
+# mc1$w.fixed[1]
+# sum(mc1$w.fixed)
+# round(100*mc1$w.fixed[1] / sum(mc1$w.fixed), 2)
+
+# 1. Apply generic inverse variance method
+# mc1.gen <- metagen(mc1$TE, mc1$seTE, sm="MD")
+# print(mc1.gen, digits=2)
+
+# # 3. Print results for fixed effect and random effects method
+# c(mc1$TE.fixed, mc1$TE.random)
+# c(mc1.gen$TE.fixed, mc1.gen$TE.random)
+
+##########################################
+#Fixed effect model
+##########################################
+#Mean difference 
+mc1 <- metacont(Ne, Me, SDe, Nc, Mc, SDc, data=data, studlab=paste(Author,dose))
+print(mc1, digits=2)
+ 
+forest(mc1, comb.random=TRUE, xlab="Difference in mean response (intervention - control)", 
+  leftcols = c("studlab"), digits.sd = 1,digits = 1,
+       prediction = TRUE,
+        plotwidth = "5cm", spacing = 1, fontsize = 9,
+        colgap = "0.3mm",
+        xlim=c(-20,10), xlab.pos=0, smlab.pos=0)
+
+
+#Standardized mean difference Hedges
+mc2 <- metacont(Ne, Me, SDe, Nc, Mc, SDc, sm="SMD",  data=data, studlab=paste(Author,dose), method.smd = "Hedges")
+#Standardized mean difference Cohen's d
+mc2 <- metacont(Ne, Me, SDe, Nc, Mc, SDc, sm="SMD",  data=data, studlab=paste(Author,dose), method.smd = "Cohen")
+#round(c(mc2$TE.fixed, mc2$seTE.fixed^2), 4)
+print(mc2, digits=2)
+
+mc_author <- metacont(Ne, Me, SDe, Nc, Mc, SDc, sm="SMD",  data=data, studlab=paste(Author), method.smd = "Cohen")
+#round(c(mc2$TE.fixed, mc2$seTE.fixed^2), 4)
+print(mc_author, digits=2)
+
+
+#Save Cohen's d and standard error
+data$TE <- mc2$TE
+data$seTE <- mc2$seTE
+
+##########################################
+#Random effect model
+##########################################
+mc2.MD <- metacont(Ne, Me, SDe, Nc, Mc, SDc, data=data, comb.fixed=FALSE, hakn=TRUE, prediction=TRUE, studlab=paste(Author,dose))
+print(mc2.MD, digits=2)
+
+mc2.sMD <- metacont(Ne, Me, SDe, Nc, Mc, SDc, sm="SMD", data=data, comb.fixed=FALSE, hakn=TRUE, prediction=TRUE, method.smd = "Cohen", studlab=paste(Author,dose))
+print(mc2.sMD, digits=2)
+
+forest(mc2.sMD, prediction=TRUE, col.predict="black",comb.random=TRUE, 
+       xlab="Standardized mean difference, Cohen's D", 
+       digits.sd = 1,digits = 1, sortvar = TE,
+       plotwidth = "5cm", spacing = 1, fontsize = 9,
+       colgap = "0.3mm",
+       xlim=c(-5,5), xlab.pos=0, smlab.pos=0)
+
+sgroup <- subgroup.analysis.mixed.effects(x = mc2.sMD,
+                                subgroups = data$group)
+forest(sgroup,digits.sd = 1,digits = 1,
+       prediction = TRUE,
+        plotwidth = "5cm", spacing = 0.8, fontsize = 9,
+        colgap = "0.3mm",
+       xlim=c(-5,5), xlab.pos=0, smlab.pos=0)
+
+sdose <- subgroup.analysis.mixed.effects(x = mc2.sMD,
+                                subgroups = data$dosec)
+forest(sdose,digits.sd = 1,digits = 1,comb.random=TRUE,
+       prediction = TRUE, 
+        plotwidth = "5cm", spacing = .8, fontsize = 9,
+        colgap = "0.3mm", xlim=c(-5,5),)
+
+```
+
+
+```{r graph, results='markup'}
+
+trimfill(mc2.sMD,comb.random=TRUE, hakn =TRUE)
+forest(trimfill(mc2.sMD,comb.random=TRUE),digits.sd = 1,digits = 1,digits.seTE = 1,
+       prediction = TRUE,leftcols = c("studlab"),
+       xlim=c(-5,5), 
+       plotwidth = "5cm", spacing = .8, fontsize = 9,
+       colgap = "5mm")
+par(mfrow=c(1,2))
+funnel(mc2.sMD)
+title("Studies included")
+funnel(trimfill(mc2.sMD,comb.random=TRUE)) #Trim-and-fill method for estimating and adjusting for the number and outcomes of missing studies
+title("Trim-and-fill")
+
+FEM <- rma(yi=TE, sei= seTE, data=data,method="FE")
+summary(FEM)
+REM <- rma(yi=TE, sei= seTE, data=data, method="REML")
+summary(REM)
+
+regtest(REM,model = 'lm', predictor = 'se')# Regresion test, Egger's intercept test
+ranktest (REM) #Begg's test
+fsn(TE, seTE, data =data) #failsafeN
+
+
+```
+
+# Diagnostic, outliers
+
+```{r met2,results= 'markup'}
+
+fo <- find.outliers(mc2)
+fo
+
+forest(fo, col.predict = "blue",
+       leftcols = c("studlab"),digits.sd = 1,digits = 1,
+       prediction = TRUE,
+        plotwidth = "5cm", spacing = 1, fontsize = 9,
+        colgap = "0.3mm")
+inf.analysis <- InfluenceAnalysis(x = mc2, random = TRUE)
+summary(inf.analysis)
+plot(inf.analysis, "influence")
+plot(inf.analysis, "baujat")
+plot(inf.analysis, "es")
+
+
+m.sMD <- metacont(Ne, Me, SDe, Nc, Mc, SDc, sm="SMD", data=data, hakn=TRUE, prediction=TRUE,
+        method.tau = "SJ", comb.random = TRUE, method.smd = "Cohen", studlab=paste(Author,dose), exclude = c(3))
+m.sMD
+REM2 <- rma(yi=TE, sei= seTE, data=data, method="REML",subset = c(1,2,4,5,6,7,8,9,10))
+summary(REM2)
+
+# Influential studies?
+leave1out(REM2)
+
+# Checking normality assumption
+qqnorm(REM)
+qqnorm(REM2)
+
+# getting empirical Bayes estimates for individual study effects
+blup(REM)
+```
+
+# Regressions 
+
+```{r reg,results= 'markup'}
+# convergence over time?
+x<-cumul(REM, order=order(data$Year)) #order according to publication date
+forest(x,cex = 0.8)
+
+# Fixed effects model with Doses as a categorical moderator (ANOVA-model)
+FEMANOVA11<-rma(TE, seTE, data=data, mods=~factor(Year), method="FE")
+summary(FEMANOVA11)
+# Random effects model with Weeks as a categorical moderator (ANOVA-model)
+REMANOVA11<- rma(TE, seTE, data=data, mods=~factor(Year), method="REML")
+summary(REMANOVA11)
+output.metareg1 <- metareg(mc2,Year, method="REML")
+summary(output.metareg1)
+
+
+FEMANOVA21<-rma(TE, seTE, data=data, mods=~factor(dose), method="FE")
+summary(FEMANOVA21)
+FEMANOVA22<-rma(TE, seTE, data=data, mods=~Doses.mg, method="FE")
+summary(FEMANOVA22)
+REMANOVA21<- rma(TE, seTE, data=data, mods=~factor(dose), method="REML")
+summary(REMANOVA21)
+REMANOVA22<- rma(TE, seTE, data=data, mods=~Doses.mg, method="REML")
+summary(REMANOVA22)
+output.metareg2 <-metareg(mc2,Doses.mg)
+summary(output.metareg2)
+
+output.metareg3 <- metareg(mc2,Female, method="REML")
+summary(output.metareg3)
+
+
+output.metareg4 <- metareg(mc2,Age, method="REML")
+summary(output.metareg4)
+
+par(mfrow=c(2,2))
+bubble(output.metareg1,
+       xlab = "Publication Year",
+       col.line = "blue",xlim=c(2008,2020), ylim = c(-2,0), cex.studlab = 0.6,
+       pos.studlab = 3, studlab = TRUE, ylab = "SMD")
+
+bubble(output.metareg2,
+       xlab = "Doses",
+       col.line = "blue",cex.studlab = 0.6,xlim=c(0.1,0.9), ylim = c(-2,0), 
+       pos.studlab = 3, studlab = TRUE, ylab = "SMD")
+
+bubble(output.metareg3,
+       xlab = "Female (%)",
+       col.line = "blue",xlim=c(0.4,0.8), ylim = c(-2,0), cex.studlab = 0.6,
+       pos.studlab = 3, studlab = TRUE, ylab = "SMD")
+
+bubble(output.metareg4,
+       xlab = "Age (mean)",
+       col.line = "blue",xlim=c(42,46), ylim = c(-2,0), cex.studlab = 0.6,
+       pos.studlab = 3, studlab = TRUE, ylab = "SMD")
+
+
+data$Age_sc <- scale(data$Age, center=TRUE, scale=FALSE) 
+data$Female_sc <- scale(data$Female, center=TRUE, scale=FALSE) 
+data$Year_sc <- scale(data$Year, center=TRUE, scale=FALSE) 
+data$Doses_sc <- scale(data$Doses.mg, center=TRUE, scale=FALSE) 
+
+mc2 <- metacont(Ne, Me, SDe, Nc, Mc, SDc, sm="SMD",  data=data, studlab=paste(Author,dose), method.smd = "Cohen")
+print(mc2, digits=2)
+
+library(PerformanceAnalytics)
+chart.Correlation(data[,c("TE","Year","Doses.mg","Female","Age")])
+
+
+metareg1 <- rma(yi=TE,sei=seTE, data=data,mods = ~ Year_sc+Doses_sc+group+Female_sc * Age_sc, method="REML",test = "knha")
+summary(metareg1)
+
+metareg2 <- rma(yi=TE,sei=seTE, data=data,mods = ~ Year_sc+Doses_sc+Female_sc * Age_sc, method="REML",test = "knha")
+summary(metareg2)
+
+anova(metareg1,metareg2)
+
+permutest(metareg2)
+
+multimodel.inference(TE = "TE", 
+                     seTE = "seTE",
+                     data = data,
+                     predictors = c("Year_sc","Doses_sc","Female_sc","Age_sc"),
+                     interaction = TRUE)
+
+```
+
+```{r gos,results= 'hide'}
+dat.gosh <- gosh(REM)
+
+```
+
+```{r plot,results= 'markup'}
+plot(dat.gosh, alpha= 0.1, col = "blue")
+gosh.diagnostics(dat.gosh)
+
+```
+
+# Multilevel model 
+
+```{r multilevel,results= 'markup'}
+full.model<-rma.mv(TE, seTE^2, data=data, random=~1|Author, 
+                   tdist = TRUE, 
+                   method = "REML") #note that we use rma.mv rather than rma 
+
+summary(full.model) ## shows the results
+
+multilevel<-rma.mv(TE, seTE^2, data=data, random=~1|Author, 
+                   tdist = TRUE, 
+                   mods = ~ Year_sc  + Female_sc * Age_sc,
+                   method = "REML",sigma2 = c(0)) #note that we use rma.mv rather than rma 
+
+summary(multilevel) ## shows the results
+
+forest(full.model, order="obs")
+
+```
+
+# Meta Analysis one dose (around 0.5 mg ketamine)
+
+```{r model2,results= 'markup'}
+
+data1 <- data[!data$Doses.mg %in% c(0.28,0.84,0.20),]
+
+#Mean difference 
+mc1 <- metacont(Ne, Me, SDe, Nc, Mc, SDc, data=data1, studlab=paste(Author))
+print(mc1, digits=2)
+forest(mc1, comb.random=TRUE, xlab="Difference in mean response (intervention - control)",
+        leftcols = c("studlab"),  digits.sd = 1,digits = 1,
+       prediction = TRUE,
+        plotwidth = "5cm", spacing = 1, fontsize = 9,
+        colgap = "0.3mm", 
+        xlim=c(-20,20), xlab.pos=0, smlab.pos=0)
+
+#Standardized mean difference Cohen's d
+mc2 <- metacont(Ne, Me, SDe, Nc, Mc, SDc, sm="SMD",  data=data1, studlab=paste(Author), method.smd = "Cohen")
+print(mc2, digits=2)
+
+data1$TE <- mc2$TE
+data1$seTE <- mc2$seTE
+
+##########################################
+#Random effect model
+##########################################
+mc2.MD <- metacont(Ne, Me, SDe, Nc, Mc, SDc, data=data1, comb.fixed=FALSE, hakn=TRUE, prediction=TRUE, studlab=paste(Author))
+print(mc2.MD, digits=2)
+
+mc2.sMD <- metacont(Ne, Me, SDe, Nc, Mc, SDc, sm="SMD", data=data1, comb.fixed=FALSE, hakn=TRUE, prediction=TRUE, method.smd = "Cohen", studlab=paste(Author))
+print(mc2.sMD, digits=2)
+
+forest(mc2.sMD, prediction=TRUE, col.predict="black",comb.random=TRUE, xlab="Standardized mean difference, Cohen's D", 
+        leftcols = c("studlab"),  digits.sd = 1,digits = 1,
+        plotwidth = "5cm", spacing = 1, fontsize = 9,
+        colgap = "0.3mm",
+       xlim=c(-10,10), xlab.pos=0, smlab.pos=0)
+
+funnel(mc2.sMD)
+trimfill(mc2.sMD,comb.random=TRUE)
+funnel(trimfill(mc2.sMD,comb.random=TRUE)) #Trim-and-fill method for estimating and adjusting for the number and outcomes of missing studies
+
+FEM <- rma(yi=TE, sei= seTE, data=data1,method="FE")
+summary(FEM)
+REM <- rma(yi=TE, sei= seTE, data=data1, method="REML")
+summary(REM)
+
+regtest(REM,model = 'lm', predictor = 'se')# Regresion test, Egger's intercept test
+ranktest (REM) #Begg's test
+fsn(TE, seTE, data =data1) #failsafeN
+
+output.metareg1 <- metareg(mc2,Year, method="REML")
+summary(output.metareg1)
+
+bubble(output.metareg1,
+       xlab = "Publication Year",
+       col.line = "blue",xlim=c(2008,2020), ylim = c(-4,-0.5), cex.studlab = 0.6,
+       pos.studlab = 3, studlab = TRUE)
+``` 
+
+# Power analysis  
+
+```{r power,results= 'markup'}
+
+power.analysis(d=1.96, 
+                k=2, 
+                n1=15, 
+                n2=15, 
+                p=0.001,
+               heterogeneity = "low") #"low", "moderate","high"
+```
+
+# Network
+
+```{r network,results= 'markup'}
+
+
+m.netmeta <- netmeta(TE = TE,
+                     seTE = seTE,
+                     treat1 = treat1,
+                     treat2 = treat2,
+                     studlab = paste(Author,dose),
+                     data = data,
+                     sm = "MD",
+                     comb.fixed = TRUE,
+                     comb.random = FALSE,
+                     reference.group = "plac",
+                     details.chkmultiarm = TRUE,
+                     sep.trts = " vs ")
+m.netmeta
+decomp.design(m.netmeta)
+
+netgraph(m.netmeta)
+
+direct.evidence.plot(x = m.netmeta)
+```
